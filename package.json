@@ -1,0 +1,11 @@
+{
+  "name": "node-spotify-ad-blocker",
+  "version": "1.0.0",
+  "main": "main.js",
+  "license": "MIT",
+  "dependencies": {
+    "spotify-web-helper": "^1.13.0",
+    "systray": "^1.0.3",
+    "wmi-client": "^0.4.1"
+  }
+}
