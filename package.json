@@ -1,11 +1,28 @@
 {
-  "name": "node-spotify-ad-blocker",
+  "name": "spotify-ad-blocker",
   "version": "1.0.0",
-  "main": "main.js",
+  "bin": "./src/main.js",
+  "main": "./src/main.js",
   "license": "MIT",
+  "scripts": {
+    "build": "pkg . --target host --output spotify-ad-blocker.exe --debug > pkg.log",
+    "build:nexe": "nexe ./src/main.js -r \"nircmdc.exe\" --build --verbose",
+    "start": "cross-env DEBUG=* NODE_ENV=development node .",
+    "start:webstorm": "cross-env DEBUG=* NODE_ENV=development node %NODE_DEBUG_OPTION% ."
+  },
   "dependencies": {
-    "spotify-web-helper": "^1.13.0",
-    "systray": "^1.0.3",
-    "wmi-client": "^0.4.1"
+    "fecha": "^2.3.3",
+    "process-list": "^1.2.2",
+    "spotify-web-helper": "s-h-a-d-o-w/spotify-web-helper",
+    "systray": "1.0.5",
+    "wmi-client": "s-h-a-d-o-w/wmi-client"
+  },
+  "devDependencies": {
+    "cross-env": "^5.1.4",
+    "nexe": "^2.0.0-rc.28",
+    "pkg": "^4.3.1"
+  },
+  "pkg": {
+    "assets": "./bin/nircmdc.exe"
   }
 }
