@@ -7,8 +7,8 @@
   "scripts": {
     "build": "node build.js",
     "build:silent": "npm run build && create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
-    "build:pkg": "pkg . --options expose-gc --target host --output spotify-ad-blocker.exe --debug > pkg.log",
-    "start": "cross-env DEBUG=* node --expose-gc .",
+    "build:pkg": "pkg . --target host --output spotify-ad-blocker.exe --debug > pkg.log",
+    "start": "cross-env DEBUG=* node .",
     "start:webstorm": "cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
     "postinstall": "patch-package"
   },

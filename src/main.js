@@ -1,14 +1,31 @@
+const path = require('path');
+const fs = require('fs-extra');
+
+// BOOTSTRAP
+// ------------------------------------------
+// Needs to be done right away so we can put processlist.node where we want it
+// and make pkg look there (by setting cwd to APPDATA_PATH).
+// It needs to be available for the require() calls that follow.
+const APPDATA_PATH = path.join(process.env.APPDATA, 'spotify-ad-blocker');
+
+fs.ensureDirSync(APPDATA_PATH);
+process.chdir(APPDATA_PATH);
+
+fs.writeFileSync(
+	path.join(APPDATA_PATH, 'processlist.node'),
+	fs.readFileSync(path.join(__dirname, '../bin/processlist.renametonode'))
+);
+// ------------------------------------------
+
 const {spawnSync} = require('child_process');
 const SpotifyWebHelper = require('spotify-web-helper');
 const {snapshot} = require('process-list');
-const path = require('path');
-const fs = require('fs-extra');
 const redirectOutput = require('./redirect-output');
+
 
 // DATA
 // ----------------------------------------------------
 const isPackaged = process.mainModule.id.endsWith('.exe') || process.hasOwnProperty('pkg');
-const APPDATA_PATH = path.join(process.env.APPDATA, 'spotify-ad-blocker');
 const logPaths = {
 	DEBUG: path.join(APPDATA_PATH, 'debug.log'),
 	ERROR: path.join(APPDATA_PATH, 'error.log'),
@@ -159,24 +176,17 @@ function initWebHelper() {
 
 // "MAIN"
 // ----------------------------------------------------
-fs.ensureDir(APPDATA_PATH)
-.then(() => {
-	if(isPackaged) {
-		redirectOutput.setupRedirection(logPaths);
-		require('./trayicon.js');
-	}
+if(isPackaged) {
+	redirectOutput.setupRedirection(logPaths);
 
 	// Executable files need to be extracted from the package, as they can't be spawned otherwise.
 	// fs.copy() would be shorter but doesn't work with nexe.
 	fs.writeFileSync(
 		nircmd.PATH,
-		fs.readFileSync('./bin/nircmdc.exe')
+		fs.readFileSync(path.join(__dirname, '../bin/nircmdc.exe'))
 	);
 
-	initWebHelper();
+	require('./trayicon.js');
+}
 
-	// TODO: RAM usage is misrepresented at startup but the --expose-gc flag doesn't work with nexe (even though it should)
-	// and zeit/pkg doesn't support processlist.node to be included in the .exe
-	//global.gc();
-})
-.catch(err => console.error(err));
+initWebHelper();

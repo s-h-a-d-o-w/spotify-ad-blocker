@@ -1,6 +1,8 @@
 const fs = require('fs');
+const path = require('path');
 const SysTray = require('systray').default;
 const AutoLaunch = require('auto-launch');
+const {spawnSync} = require('child_process');
 
 const isPackaged = process.mainModule.id.endsWith('.exe') || process.hasOwnProperty('pkg');
 const blockerAutoLaunch = new AutoLaunch({
@@ -11,21 +13,31 @@ const blockerAutoLaunch = new AutoLaunch({
 const createTray = (autoLaunchEnabled) => {
 	// See: https://github.com/zaaack/node-systray#usage
 	// And: https://zaaack.github.io/node-systray/modules/_index_.html
-	const icon = fs.readFileSync('./assets/spotify-ad-blocker_icon.ico');
+	const icon = fs.readFileSync(path.join(__dirname, '../assets/spotify-ad-blocker_icon.ico'));
+	const menu = {
+		icon: icon.toString('base64'),
+		title: "Spotify Ad Blocker",
+		tooltip: "Spotify Ad Blocker",
+		items: [{
+			title: "Run on startup",
+			checked: autoLaunchEnabled,
+			enabled: isPackaged
+		}, {
+			title: "Exit",
+			enabled: true
+		}]
+	};
+
+	// Make Test option available only in dev environment
+	if(!isPackaged) {
+		menu.items.push({
+			title: "Test",
+			enabled: true
+		});
+	}
+
 	const systray = new SysTray({
-		menu: {
-			icon: icon.toString('base64'),
-			title: "Spotify Ad Blocker",
-			tooltip: "Spotify Ad Blocker",
-			items: [{
-				title: "Run on startup",
-				checked: autoLaunchEnabled,
-				enabled: isPackaged
-			}, {
-				title: "Exit",
-				enabled: true
-			}]
-		},
+		menu,
 		debug: false,
 		copyDir: true, // copy go tray binary to outside directory, useful for packing tool like pkg.
 	});
@@ -45,6 +57,10 @@ const createTray = (autoLaunchEnabled) => {
 				break;
 			case 1:
 				systray.kill();
+				break;
+			case 2:
+				spawnSync(path.join(__dirname, '../bin/nircmdc.exe'), ['muteappvolume', 'Spotify.exe', '2']);
+				break;
 		}
 	});
 };
