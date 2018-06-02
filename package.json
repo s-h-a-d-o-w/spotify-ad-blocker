@@ -5,24 +5,35 @@
   "main": "./src/main.js",
   "license": "MIT",
   "scripts": {
-    "build": "pkg . --target host --output spotify-ad-blocker.exe --debug > pkg.log",
-    "build:nexe": "nexe ./src/main.js -r \"nircmdc.exe\" --build --verbose",
-    "start": "cross-env DEBUG=* NODE_ENV=development node .",
-    "start:webstorm": "cross-env DEBUG=* NODE_ENV=development node %NODE_DEBUG_OPTION% ."
+    "build": "node build.js",
+    "build:silent": "npm run build && create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
+    "build:pkg": "pkg . --options expose-gc --target host --output spotify-ad-blocker.exe --debug > pkg.log",
+    "start": "cross-env DEBUG=* node --expose-gc .",
+    "start:webstorm": "cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
+    "postinstall": "patch-package"
   },
   "dependencies": {
+    "auto-launch": "^5.0.5",
     "fecha": "^2.3.3",
+    "fs-extra": "^6.0.1",
     "process-list": "^1.2.2",
     "spotify-web-helper": "s-h-a-d-o-w/spotify-web-helper",
     "systray": "1.0.5",
     "wmi-client": "s-h-a-d-o-w/wmi-client"
   },
   "devDependencies": {
+    "create-nodew-exe": "^1.0.4",
     "cross-env": "^5.1.4",
     "nexe": "^2.0.0-rc.28",
-    "pkg": "^4.3.1"
+    "patch-package": "^5.1.1",
+    "pkg": "^4.3.1",
+    "postinstall-postinstall": "^1.0.0"
   },
   "pkg": {
-    "assets": "./bin/nircmdc.exe"
+    "assets": [
+      "./assets/spotify-ad-blocker_icon.ico",
+      "./bin/nircmdc.exe",
+      "./bin/processlist.renametonode"
+    ]
   }
 }

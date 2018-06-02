@@ -1,18 +1,57 @@
 const {spawnSync} = require('child_process');
 const SpotifyWebHelper = require('spotify-web-helper');
 const {snapshot} = require('process-list');
+const path = require('path');
+const fs = require('fs-extra');
+const redirectOutput = require('./redirect-output');
 
-require('./init');
-
-const NIRCMD_MUTE = 1;
-const NIRCMD_UNMUTE = 0;
-
+// DATA
+// ----------------------------------------------------
+const isPackaged = process.mainModule.id.endsWith('.exe') || process.hasOwnProperty('pkg');
+const APPDATA_PATH = path.join(process.env.APPDATA, 'spotify-ad-blocker');
+const logPaths = {
+	DEBUG: path.join(APPDATA_PATH, 'debug.log'),
+	ERROR: path.join(APPDATA_PATH, 'error.log'),
+};
+const nircmd = {
+	PATH: path.join(APPDATA_PATH, 'nircmdc.exe'),
+	MUTE: 1,
+	UNMUTE: 0,
+};
 const spotify = {
-	player: SpotifyWebHelper().player,
+	player: null,
 	muted: false,
 	pid: -1
 };
+// ----------------------------------------------------
 
+
+// EVENT LISTENERS
+// ----------------------------------------------------
+// Remove our temporary files from %APPDATA% on exit, unless there is log content
+process.on('exit', () => {
+	// Only sync operations can be done here!
+
+	// Only clean up if log files don't exist or if they are empty
+	if(!((fs.existsSync(logPaths.DEBUG) && fs.existsSync(logPaths.ERROR)) &&
+		(fs.statSync(logPaths.DEBUG).size > 0 || fs.statSync(logPaths.ERROR).size > 0))) {
+
+		// Close log files
+		if(isPackaged)
+			redirectOutput.endStreams();
+
+		// The only way to see whether this fails aside from actually checking whether the directory
+		// was deleted is to run this using yarn:start (setting DEBUG variable to anything but * first!) and
+		// setting isPackaged = true temporarily.
+		// And even then, we can only see exit code 1, since of course stdout/sterr point
+		// to nothing.
+		fs.removeSync(APPDATA_PATH);
+	}
+});
+
+
+// FUNCTIONS
+// ----------------------------------------------------
 // Figure out PID of client window.
 const getSpotifyPid = () => {
 	return snapshot('name', 'pid', 'ppid').then(tasks => {
@@ -38,25 +77,41 @@ const statusListener = (status) => {
 	let spawnResult = {};
 
 	if(status.next_enabled) { // NO AD
+		// It might seem like Spotify always triggers two status changes after an ad.
+		// But this is not guaranteed!
 		if(spotify.muted) {
-			// Spotify sends info about next track about 500ms before ad actually ends.
+			console.log("Scheduling unmuting.");
+			spotify.muted = false;
+
+			// Spotify triggers the status change while the ad is still playing, so a
+			// slight delay is needed.
+			// I think it's preferable to cut off a few milliseconds of the song that follows
+			// rather than hear a bit of the ad.
 			setTimeout(() => {
-				spawnResult = spawnSync('../bin/nircmdc', ['muteappvolume', `/${spotify.pid}`, NIRCMD_UNMUTE], { windowsHide: true });
-				spotify.muted = false;
-				console.log("Unmuted");
-			}, 500);
+				console.log("Unmuting.");
+				spawnResult = spawnSync(nircmd.PATH,
+					['muteappvolume', `/${spotify.pid}`, nircmd.UNMUTE],
+					{ windowsHide: true }
+				);
+			}, 800);
 		}
 	}
 	// check properties track, playing_position and track length to ensure that something is actually playing
 	else if(status.hasOwnProperty('track') && Math.abs(status.playing_position - status.track.length) > 0) { // AD!!
 		if(!spotify.muted) {
-			spawnResult = spawnSync('../bin/nircmdc', ['muteappvolume', `/${spotify.pid}`, NIRCMD_MUTE], { windowsHide: true });
+			console.log("Muting.");
+			spawnResult = spawnSync(nircmd.PATH,
+				['muteappvolume', `/${spotify.pid}`, nircmd.MUTE],
+				{ windowsHide: true }
+			);
 
 			// Sometimes, nircmd also mutes System Sounds. Ensure that those stay unmuted
-			spawnResult = spawnSync('../bin/nircmdc', ['muteappvolume', 'SystemSounds', NIRCMD_UNMUTE], { windowsHide: true });
+			spawnResult = spawnSync(nircmd.PATH,
+				['muteappvolume', 'SystemSounds', nircmd.MUTE],
+				{ windowsHide: true }
+			);
 
 			spotify.muted = true;
-			console.log("Muted");
 		}
 	}
 
@@ -64,29 +119,64 @@ const statusListener = (status) => {
 		throw new Error('Problem muting volume: ' + spawnResult.error);
 };
 
-// STARTUP
-getSpotifyPid()
-.then(() => {
-	spotify.player.on('open', () => {
-		console.log('Spotify is starting...');
-		getSpotifyPid()
-		.then(() => spotify.player.on('status-will-change', statusListener));
-	});
+function initWebHelper() {
+	spotify.player = SpotifyWebHelper().player;
 
-	spotify.player.on('closing', () => {
-		console.log('Spotify is shutting down...');
-		spotify.player.removeListener('status-will-change', statusListener);
-	});
+	return getSpotifyPid()
+	.then(() => {
+		spotify.player.on('open', () => {
+			console.log('Spotify is starting...');
+			getSpotifyPid();
+		});
 
-	spotify.player.on('close', () => {
-		console.log('Spotify has shut down.');
-	});
+		spotify.player.on('closing', () => {
+			console.log('Spotify is shutting down...');
+		});
 
-	// If Spotify is already running, the 'open' event of course won't get triggered,
-	// so add listener straight away.
-	if(spotify.pid !== -1)
+		spotify.player.on('close', () => {
+			console.log('Spotify has shut down.');
+		});
+
+		spotify.player.on('error', (err) => {
+			if(err.statusCode === 503) {
+				spotify.player.removeAllListeners();
+				delete spotify.player;
+
+				// Service Unavailable - keep retrying until it becomes available
+				setTimeout(initWebHelper, 5000);
+			}
+			else {
+				console.log(err);
+			}
+		});
+
 		spotify.player.on('status-will-change', statusListener);
-});
+	})
+	.catch(err => console.error(err));
+}
+// ----------------------------------------------------
 
-if(process.pkg)
-	require('./trayicon.js');
+
+// "MAIN"
+// ----------------------------------------------------
+fs.ensureDir(APPDATA_PATH)
+.then(() => {
+	if(isPackaged) {
+		redirectOutput.setupRedirection(logPaths);
+		require('./trayicon.js');
+	}
+
+	// Executable files need to be extracted from the package, as they can't be spawned otherwise.
+	// fs.copy() would be shorter but doesn't work with nexe.
+	fs.writeFileSync(
+		nircmd.PATH,
+		fs.readFileSync('./bin/nircmdc.exe')
+	);
+
+	initWebHelper();
+
+	// TODO: RAM usage is misrepresented at startup but the --expose-gc flag doesn't work with nexe (even though it should)
+	// and zeit/pkg doesn't support processlist.node to be included in the .exe
+	//global.gc();
+})
+.catch(err => console.error(err));
