@@ -19,7 +19,7 @@
     "fecha": "^2.3.3",
     "fs-extra": "^6.0.1",
     "process-list": "^1.2.2",
-    "spotify-web-helper": "s-h-a-d-o-w/spotify-web-helper",
+    "spotify-web-helper": "s-h-a-d-o-w/spotify-web-helper#dev",
     "systray": "1.0.5"
   },
   "devDependencies": {
