@@ -1,5 +1,7 @@
 assets-raw
-*.exe
+
+# Possible builds
+/*.exe
 
 # Logs
 logs

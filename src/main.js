@@ -30,11 +30,7 @@ const logPaths = {
 	DEBUG: path.join(APPDATA_PATH, 'debug.log'),
 	ERROR: path.join(APPDATA_PATH, 'error.log'),
 };
-const nircmd = {
-	PATH: path.join(APPDATA_PATH, 'nircmdc.exe'),
-	MUTE: 1,
-	UNMUTE: 0,
-};
+const mutevolume = path.join(APPDATA_PATH, 'mutevolume.exe');
 const spotify = {
 	player: null,
 	muted: false,
@@ -106,29 +102,22 @@ const statusListener = (status) => {
 			// rather than hear a bit of the ad.
 			setTimeout(() => {
 				console.log("Unmuting.");
-				spawnResult = spawnSync(nircmd.PATH,
-					['muteappvolume', `/${spotify.pid}`, nircmd.UNMUTE],
+				spawnResult = spawnSync(mutevolume,
+					[spotify.pid, spotify.muted],
 					{ windowsHide: true }
 				);
 			}, 800);
 		}
 	}
-	// check properties track, playing_position and track length to ensure that something is actually playing
+	// Check properties track, playing_position and track length to ensure that something is actually playing
 	else if(status.hasOwnProperty('track') && Math.abs(status.playing_position - status.track.length) > 0) { // AD!!
 		if(!spotify.muted) {
-			console.log("Muting.");
-			spawnResult = spawnSync(nircmd.PATH,
-				['muteappvolume', `/${spotify.pid}`, nircmd.MUTE],
-				{ windowsHide: true }
-			);
-
-			// Sometimes, nircmd also mutes System Sounds. Ensure that those stay unmuted
-			spawnResult = spawnSync(nircmd.PATH,
-				['muteappvolume', 'SystemSounds', nircmd.MUTE],
-				{ windowsHide: true }
-			);
-
 			spotify.muted = true;
+			console.log("Muting.");
+			spawnResult = spawnSync(mutevolume,
+				[spotify.pid, spotify.muted],
+				{ windowsHide: true }
+			);
 		}
 	}
 
@@ -178,15 +167,14 @@ function initWebHelper() {
 // ----------------------------------------------------
 if(isPackaged) {
 	redirectOutput.setupRedirection(logPaths);
-
-	// Executable files need to be extracted from the package, as they can't be spawned otherwise.
-	// fs.copy() would be shorter but doesn't work with nexe.
-	fs.writeFileSync(
-		nircmd.PATH,
-		fs.readFileSync(path.join(__dirname, '../bin/nircmdc.exe'))
-	);
-
-	require('./trayicon.js');
 }
 
+// Executable files need to be extracted from the package, as they can't be spawned otherwise.
+// fs.copy() would be shorter but doesn't work with nexe.
+fs.writeFileSync(
+	mutevolume,
+	fs.readFileSync(path.join(__dirname, '../bin/mutevolume.exe'))
+);
+
+require('./trayicon.js');
 initWebHelper();

@@ -5,11 +5,13 @@
   "main": "./src/main.js",
   "license": "MIT",
   "scripts": {
-    "build": "node build.js",
-    "build:silent": "npm run build && create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
-    "build:pkg": "pkg . --target host --output spotify-ad-blocker.exe --debug > pkg.log",
+    "build": "npm run build:mute && npm run build:pkg && npm run build:silentexe",
+    "build:pkg": "pkg . --target host --output spotify-ad-blocker.exe",
+    "build:mute": "gcc -s -o bin\\mutevolume.exe native\\win\\mutevolume.cc -lole32",
+    "build:silentexe": "create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
+    "build:pkg:debug": "pkg . --target host --output spotify-ad-blocker.exe --debug > pkg.log",
     "start": "cross-env DEBUG=* node .",
-    "start:webstorm": "cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
+    "start:webstorm": "npm run build:mute && cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
     "postinstall": "patch-package"
   },
   "dependencies": {
@@ -18,21 +20,19 @@
     "fs-extra": "^6.0.1",
     "process-list": "^1.2.2",
     "spotify-web-helper": "s-h-a-d-o-w/spotify-web-helper",
-    "systray": "1.0.5",
-    "wmi-client": "s-h-a-d-o-w/wmi-client"
+    "systray": "1.0.5"
   },
   "devDependencies": {
     "create-nodew-exe": "^1.0.4",
     "cross-env": "^5.1.4",
-    "nexe": "^2.0.0-rc.28",
     "patch-package": "^5.1.1",
     "pkg": "^4.3.1",
     "postinstall-postinstall": "^1.0.0"
   },
   "pkg": {
     "assets": [
-      "./assets/spotify-ad-blocker_icon.ico",
-      "./bin/nircmdc.exe",
+      "./assets/spotify-ad-blocker.ico",
+      "./bin/mutevolume.exe",
       "./bin/processlist.renametonode"
     ]
   }

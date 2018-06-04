@@ -11,9 +11,16 @@ const blockerAutoLaunch = new AutoLaunch({
 });
 
 const createTray = (autoLaunchEnabled) => {
+	// For debugging mutevolume/trayicon functionality.
+	// Need to set pid manually - not very sophisticated, I know...
+	const debugOptions = {
+		pid: 8584,
+		muteState: false,
+	};
+
 	// See: https://github.com/zaaack/node-systray#usage
 	// And: https://zaaack.github.io/node-systray/modules/_index_.html
-	const icon = fs.readFileSync(path.join(__dirname, '../assets/spotify-ad-blocker_icon.ico'));
+	const icon = fs.readFileSync(path.join(__dirname, '../assets/spotify-ad-blocker.ico'));
 	const menu = {
 		icon: icon.toString('base64'),
 		title: "Spotify Ad Blocker",
@@ -31,9 +38,12 @@ const createTray = (autoLaunchEnabled) => {
 	// Make Test option available only in dev environment
 	if(!isPackaged) {
 		menu.items.push({
-			title: "Test",
+			title: "Test (toggle muting)",
 			enabled: true
 		});
+
+		// Mute initially
+		spawnSync(path.join(__dirname, '../bin/mutevolume.exe'), [debugOptions.pid, debugOptions.muteState]);
 	}
 
 	const systray = new SysTray({
@@ -59,7 +69,13 @@ const createTray = (autoLaunchEnabled) => {
 				systray.kill();
 				break;
 			case 2:
-				spawnSync(path.join(__dirname, '../bin/nircmdc.exe'), ['muteappvolume', 'Spotify.exe', '2']);
+				// Can only be executed if isPackaged === true
+				debugOptions.muteState = !debugOptions.muteState;
+				let result = spawnSync(
+					path.join(__dirname, '../bin/mutevolume.exe'),
+					[debugOptions.pid, debugOptions.muteState]
+				);
+				console.log(result.stdout.toString());
 				break;
 		}
 	});
