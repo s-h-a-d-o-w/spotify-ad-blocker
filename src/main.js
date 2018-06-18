@@ -40,6 +40,9 @@ require('./bootstrap').then(() => {
 			// change back to the original directory instead of spawning process.execPath
 			// directly (which doesn't work).
 			process.chdir(path.dirname(process.execPath));
+
+			// THIS ONLY WORKS WITH PKG PATCH THAT REMOVES THEIR SPAWN REPLACEMENT!
+			// (Otherwise, their spawn causes an error - IIRC about not being able to find the file)
 			spawn(
 				path.basename(process.execPath), ['--cleanup'], {
 					detached: true,
