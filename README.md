@@ -17,9 +17,10 @@ you like me have your machine running for weeks or months at a time.
 - Spotify Ad Blocker compensates for the fact that Spotify signals a bit too early that an ad is 
 done playing.
 
-## Usage (WIP)
+## Usage
 
 Simply download the latest release and run it.
+Control it through the tray icon.
 
 ## Bugs? 
 
