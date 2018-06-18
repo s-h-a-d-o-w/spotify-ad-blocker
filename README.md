@@ -45,7 +45,7 @@ This is required to build mutevolume.exe - kind of the core piece...
 - Start ResourceHacker (yes, the GUI) and select `Icon`, then right click -> `Replace Icon...`. 
 Leave everything at default, simply select `spotify-ad-blocker_for_exe.ico` from `./assets` and 
 then save.
-(If the new icon doesn't show up in e.g. Explorer, run  
+(If the new icon doesn't show up in e.g. Explorer, run 
 [`ie4uinit.exe -ClearIconCache`](https://superuser.com/a/499079/700677) on Win7,
 `ie4uinit.exe -show` on Win10)
 

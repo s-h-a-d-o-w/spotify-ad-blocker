@@ -6,10 +6,11 @@
   "license": "MIT",
   "scripts": {
     "build": "npm run build:mute && npm run build:pkg && npm run build:silentexe",
-    "build:pkg": "pkg . --target host --output spotify-ad-blocker.exe",
     "build:mute": "gcc -s -o bin\\mutevolume.exe native\\win\\mutevolume.cc -lole32",
-    "build:silentexe": "create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
+    "build:pkg": "pkg . --target host --output spotify-ad-blocker.exe",
     "build:pkg:debug": "pkg . --target host --output spotify-ad-blocker.exe --debug > pkg.log",
+    "build:silentexe": "create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
+    "build:terminal": "npm run build:mute && npm run build:pkg",
     "start": "cross-env DEBUG=* node .",
     "start:webstorm": "npm run build:mute && cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
     "postinstall": "patch-package"
