@@ -169,8 +169,6 @@ require('./bootstrap').then(() => {
 		fs.readFileSync(path.join(__dirname, '../bin/mutevolume.exe'))
 	);
 
-	console.log(process);
-
 	require('./trayicon.js');
 	initWebHelper();
 });
