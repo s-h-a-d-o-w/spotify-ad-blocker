@@ -1,16 +1,9 @@
 const fs = require('fs');
 const fecha = require('fecha');
 
-let stdoutFile, stderrFile;
-
 /**
  * Since all output is redirected to files, nothing can be caught any more after this is called!
  */
-function endStreams() {
-	stdoutFile.end();
-	stderrFile.end();
-}
-
 function setupRedirection(logPaths) {
 	// Redirect uncaught/unhandled things to console.error (makes logging them to file possible)
 	// ------------------------------------------------------------------------------
@@ -27,7 +20,7 @@ function setupRedirection(logPaths) {
 
 	// Redirect stdout/stderr to log files if app is run as packaged .exe
 	// --------------------------------------------------------------------
-	stdoutFile = fs.createWriteStream(logPaths.DEBUG, {flags: 'a'});
+	const stdoutFile = fs.createWriteStream(logPaths.DEBUG, {flags: 'a'});
 	process.stdout.write = function (string, encoding) {
 		// ignore stdout if not run with --debug
 		if(process.argv.includes('--debug')) {
@@ -36,7 +29,7 @@ function setupRedirection(logPaths) {
 		}
 	};
 
-	stderrFile = fs.createWriteStream(logPaths.ERROR, {flags: 'a'});
+	const stderrFile = fs.createWriteStream(logPaths.ERROR, {flags: 'a'});
 	process.stderr.write = function (string, encoding) {
 		string = `${fecha.format(new Date(), "HH:mm:ss.SSS")}: ${string}`;
 		stderrFile.write(string, encoding);
@@ -44,6 +37,5 @@ function setupRedirection(logPaths) {
 }
 
 module.exports = {
-	endStreams,
-	setupRedirection,
+	setupRedirection
 };

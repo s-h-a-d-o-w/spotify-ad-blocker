@@ -1,13 +1,14 @@
 require('./bootstrap').then(() => {
 	const path = require('path');
 	const fs = require('fs-extra');
-	const {spawnSync, spawn} = require('child_process');
+	const {spawn} = require('child_process');
 	const SpotifyWebHelper = require('spotify-web-helper');
 	const {snapshot} = require('process-list');
-	const redirectOutput = require('./redirect-output');
+	const volumectrl = require('bindings')('volumectrl');
 
-	const {IS_PACKAGED, PATH_APPDATA, PATH_LOGS, MUTEVOLUME} = require('./consts.js');
+	const redirectOutput = require('./redirect-output.js');
 	const state = require('./state.js');
+	const {IS_PACKAGED, PATH_APPDATA, PATH_LOGS} = require('./consts.js');
 
 
 	// NODE EVENT LISTENERS
@@ -17,10 +18,9 @@ require('./bootstrap').then(() => {
 		if(!((fs.existsSync(PATH_LOGS.DEBUG) && fs.statSync(PATH_LOGS.DEBUG).size > 0) ||
 			(fs.existsSync(PATH_LOGS.ERROR) && fs.statSync(PATH_LOGS.ERROR).size > 0)) ) {
 
-			// Clean up our temporary data on exit (see other branch above)
 			// This process has to be able to exit before clean up happens - thus, use 'spawn'
 			// instead of 'spawnSync', despite the fact that all things in exit event are supposed to
-			// be sync according to the docs...
+			// be sync according to the Node.js docs...
 
 			// Not sure why (and not enough time to figure out right now) but we have to
 			// change back to the original directory instead of spawning process.execPath
@@ -66,8 +66,6 @@ require('./bootstrap').then(() => {
 	};
 
 	const statusListener = (status) => {
-		let spawnResult = {};
-
 		if(status.next_enabled) { // NO AD
 			// It might seem like Spotify always triggers two status changes after an ad.
 			// But this is not guaranteed!
@@ -80,11 +78,12 @@ require('./bootstrap').then(() => {
 				// I think it's preferable to cut off a few milliseconds of the song that follows
 				// rather than hear a bit of the ad.
 				setTimeout(() => {
-					console.log("Unmuting.");
-					spawnResult = spawnSync(MUTEVOLUME,
-						[state.spotify.pid, state.spotify.muted],
-						{ windowsHide: true }
-					);
+					// Don't catch errors because if volume control errors, something is so messed up
+					// that the app should exit anyway.
+					volumectrl.mute(state.spotify.muted, state.spotify.pid)
+					.then(() => {
+						console.log('Unmuted.');
+					})
 				}, 800);
 			}
 		}
@@ -92,16 +91,13 @@ require('./bootstrap').then(() => {
 		else if(status.hasOwnProperty('track') && Math.abs(status.playing_position - status.track.length) > 0) { // AD!!
 			if(!state.spotify.muted) {
 				state.spotify.muted = true;
-				console.log("Muting.");
-				spawnResult = spawnSync(MUTEVOLUME,
-					[state.spotify.pid, state.spotify.muted],
-					{ windowsHide: true }
-				);
+
+				volumectrl.mute(state.spotify.muted, state.spotify.pid)
+				.then(() => {
+					console.log('Muted.');
+				})
 			}
 		}
-
-		if(spawnResult.error)
-			throw new Error('Problem muting volume: ' + spawnResult.error);
 	};
 
 	function initWebHelper() {
@@ -139,13 +135,7 @@ require('./bootstrap').then(() => {
 		redirectOutput.setupRedirection(PATH_LOGS);
 	}
 
-	// Executable files need to be extracted from the package, as they can't be spawned otherwise.
-	// fs.copy() would be shorter but doesn't work with nexe.
-	fs.writeFileSync(
-		MUTEVOLUME,
-		fs.readFileSync(path.join(__dirname, '../bin/mutevolume.exe'))
-	);
-
 	require('./trayicon.js');
 	initWebHelper();
+	// ----------------------------------------------------
 });

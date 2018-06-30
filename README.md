@@ -38,8 +38,9 @@ The systray icon runs as a separate process, so don't be alarmed if you someday 
 This is only relevant if you for some reason want to build this project yourself - maybe you 
 want to fork it or something. (Plus - notes to my future self :wink:) 
 
-- Install Mingw64, make sure its `bin` directory is in `PATH` (`gcc` has to be available).
-This is required to build mutevolume.exe - kind of the core piece... 
+- A recent Node.js version (see `engines` in `package.json`) is needed, since N-API is used 
+for the native addon in this project and this was still experimental in Node 8.x, printing 
+warnings to the console.
 
 - Run `yarn build`
 
@@ -60,13 +61,12 @@ didn't work.
 Apparently, rcedit can be safely used on the files in pkg's `.pkg-cache`, so maybe 
 that would work but... modifying files in third party parts of the build pipeline seems very 
 dirty to me.  
-An acceptable solution might be to implement a features in `pkg` that let the user a) only 
+An acceptable solution might be to implement features in `pkg` that let the user a) only 
 fetch the binaries b) let the user specify the node binary to be used. So one could do a), then 
 copy the binary into a temp directory, modify it and use b) to tell `pkg` to use that one instead 
 of the one from its own cache.  
 **If someone reads this, thinks it's a good idea and finds the time to implement this in `pkg` 
 (and zeit actually merges the features), please do let me know.**
  
-- Build volume control library using N-API (based on mutevolume.cc) and use that instead of 
-mutevolume.exe. Once N-API stabilizes - see 
-[https://github.com/s-h-a-d-o-w/napi-test](https://github.com/s-h-a-d-o-w/napi-test).  
+- Expand volumectrl to a more general volume control library and then use that as an external 
+dependency.

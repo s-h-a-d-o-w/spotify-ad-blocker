@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const SysTray = require('systray').default;
 const AutoLaunch = require('auto-launch');
-const {spawnSync} = require('child_process');
+const volumectrl = require('bindings')('volumectrl');
 
 const {IS_PACKAGED} = require('./consts.js');
 const state = require('./state.js');
@@ -62,16 +62,14 @@ const createTray = (autoLaunchEnabled) => {
 			case 2:
 				// Only available if IS_PACKAGED === true
 				state.spotify.muted = !state.spotify.muted;
-				console.log(`Mute on demand: ${state.spotify.muted}`);
 
-				let result = spawnSync(
-					path.join(__dirname, '../bin/mutevolume.exe'),
-					[state.spotify.pid, state.spotify.muted]
-				);
-
-				let stdout = result.stdout.toString();
-				if(stdout !== "")
-					console.log(stdout);
+				volumectrl.mute(state.spotify.muted, state.spotify.pid)
+				.then(() => {
+					console.log(`Mute on demand: ${state.spotify.muted}`);
+				})
+				.catch((e) => {
+					console.error(e);
+				});
 
 				break;
 		}

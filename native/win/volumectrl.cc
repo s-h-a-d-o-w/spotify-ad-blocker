@@ -15,38 +15,27 @@
 #include <audiopolicy.h>
 #include <stdio.h>
 
-#define EXIT_ON_ERROR(hr)  \
-			  if (FAILED(hr)) { fprintf(stderr, "Error %d occurred\n", -hr); exitCode = 1; goto Exit; }
+#include "volumectrl.h"
 
 
-#define SAFE_RELEASE(punk)  \
-			  if ((punk) != NULL)  \
-				{ (punk)->Release(); (punk) = NULL; }
+#define STRINGIFY2(x) #x
+#define STRINGIFY(x) STRINGIFY2(x)
 
-#define HR_CALL(the_call)                                     \
-	hr = the_call;                                            \
-	if(FAILED(hr)) {                                          \
-		fprintf(stderr, "Error %d occurred\n", -hr);          \
-		exitCode = 1;                                         \
-		goto Exit;                                            \
+#define SAFE_RELEASE(punk)                     \
+	if ((punk) != NULL)                        \
+		{ (punk)->Release(); (punk) = NULL; }
+
+#define HR_CALL(the_call)                                                      \
+	hr = the_call;                                                             \
+	if(FAILED(hr)) {                                                           \
+		res = {-hr, "Windows API Error @ " __FILE__ ":" STRINGIFY(__LINE__) }; \
+		goto Exit;                                                             \
 	}
 
-int main(int argc, char** argv) {
-	int exitCode = 0;
-	int pid = -1;
-	bool mute = false;
-	HRESULT hr = S_OK;
 
-	// Retrieve arguments
-	if(argc == 3) {
-		pid = atoi(argv[1]);
-		mute = strcmp(argv[2], "true") == 0;
-	}
-	else {
-		fprintf(stderr, "Wrong number of arguments");
-		return 1;
-	}
-
+VolumeCtrlResult mute(bool mute, int pid) {
+	VolumeCtrlResult res = {0, ""};
+	HRESULT hr = S_OK; // Used by macro above
 
 	IAudioSessionManager2 *pSessionManager = NULL;
 	IAudioSessionEnumerator *pSessionEnumerator = NULL;
@@ -117,5 +106,5 @@ Exit:
 
 	CoUninitialize();
 
-	return exitCode;
+	return res;
 }
