@@ -6,30 +6,16 @@ require('./bootstrap').then(() => {
 	const {snapshot} = require('process-list');
 	const redirectOutput = require('./redirect-output');
 
-
-	// DATA
-	// ----------------------------------------------------
-	const APPDATA_PATH = path.join(process.env.APPDATA, 'spotify-ad-blocker');
-	const isPackaged = process.mainModule.id.endsWith('.exe') || process.hasOwnProperty('pkg');
-	const logPaths = {
-		DEBUG: path.join(APPDATA_PATH, 'debug.log'),
-		ERROR: path.join(APPDATA_PATH, 'error.log'),
-	};
-	const mutevolume = path.join(APPDATA_PATH, 'mutevolume.exe');
-	const spotify = {
-		player: null,
-		muted: false,
-		pid: -1
-	};
-	// ----------------------------------------------------
+	const {IS_PACKAGED, PATH_APPDATA, PATH_LOGS, MUTEVOLUME} = require('./consts.js');
+	const state = require('./state.js');
 
 
 	// NODE EVENT LISTENERS
 	// ----------------------------------------------------
 	process.on('exit', () => {
 		// Don't clean up if a log file exists that isn't empty
-		if(!((fs.existsSync(logPaths.DEBUG) && fs.statSync(logPaths.DEBUG).size > 0) ||
-			(fs.existsSync(logPaths.ERROR) && fs.statSync(logPaths.ERROR).size > 0)) ) {
+		if(!((fs.existsSync(PATH_LOGS.DEBUG) && fs.statSync(PATH_LOGS.DEBUG).size > 0) ||
+			(fs.existsSync(PATH_LOGS.ERROR) && fs.statSync(PATH_LOGS.ERROR).size > 0)) ) {
 
 			// Clean up our temporary data on exit (see other branch above)
 			// This process has to be able to exit before clean up happens - thus, use 'spawn'
@@ -50,7 +36,7 @@ require('./bootstrap').then(() => {
 			);
 		}
 		else {
-			console.log(`Logs exist in ${APPDATA_PATH} - temporary files were not removed.`);
+			console.log(`Logs exist in ${PATH_APPDATA} - temporary files were not removed.`);
 		}
 	});
 	// ----------------------------------------------------
@@ -70,12 +56,12 @@ require('./bootstrap').then(() => {
 			// => must be the "mother" process that we're looking for.
 			for(let i = 0; i < tasks.length; i++) {
 				if(!spotifyPids.includes(tasks[i].ppid)) {
-					spotify.pid = tasks[i].pid;
+					state.spotify.pid = tasks[i].pid;
 					break;
 				}
 			}
 
-			console.log(`Process ID: ${spotify.pid}`);
+			console.log(`Process ID: ${state.spotify.pid}`);
 		});
 	};
 
@@ -85,9 +71,9 @@ require('./bootstrap').then(() => {
 		if(status.next_enabled) { // NO AD
 			// It might seem like Spotify always triggers two status changes after an ad.
 			// But this is not guaranteed!
-			if(spotify.muted) {
+			if(state.spotify.muted) {
 				console.log("Scheduling unmuting.");
-				spotify.muted = false;
+				state.spotify.muted = false;
 
 				// Spotify triggers the status change while the ad is still playing, so a
 				// slight delay is needed.
@@ -95,8 +81,8 @@ require('./bootstrap').then(() => {
 				// rather than hear a bit of the ad.
 				setTimeout(() => {
 					console.log("Unmuting.");
-					spawnResult = spawnSync(mutevolume,
-						[spotify.pid, spotify.muted],
+					spawnResult = spawnSync(MUTEVOLUME,
+						[state.spotify.pid, state.spotify.muted],
 						{ windowsHide: true }
 					);
 				}, 800);
@@ -104,11 +90,11 @@ require('./bootstrap').then(() => {
 		}
 		// Check properties track, playing_position and track length to ensure that something is actually playing
 		else if(status.hasOwnProperty('track') && Math.abs(status.playing_position - status.track.length) > 0) { // AD!!
-			if(!spotify.muted) {
-				spotify.muted = true;
+			if(!state.spotify.muted) {
+				state.spotify.muted = true;
 				console.log("Muting.");
-				spawnResult = spawnSync(mutevolume,
-					[spotify.pid, spotify.muted],
+				spawnResult = spawnSync(MUTEVOLUME,
+					[state.spotify.pid, state.spotify.muted],
 					{ windowsHide: true }
 				);
 			}
@@ -119,37 +105,28 @@ require('./bootstrap').then(() => {
 	};
 
 	function initWebHelper() {
-		spotify.player = SpotifyWebHelper().player;
+		state.spotify.player = SpotifyWebHelper().player;
 
 		return getSpotifyPid()
 		.then(() => {
-			spotify.player.on('open', () => {
+			state.spotify.player.on('open', () => {
 				console.log('Spotify is starting...');
 				getSpotifyPid();
 			});
 
-			spotify.player.on('closing', () => {
+			state.spotify.player.on('closing', () => {
 				console.log('Spotify is shutting down...');
 			});
 
-			spotify.player.on('close', () => {
+			state.spotify.player.on('close', () => {
 				console.log('Spotify has shut down.');
 			});
 
-			spotify.player.on('error', (err) => {
-				if(err.statusCode === 503) {
-					spotify.player.removeAllListeners();
-					delete spotify.player;
-
-					// Service Unavailable - keep retrying until it becomes available
-					setTimeout(initWebHelper, 5000);
-				}
-				else {
-					console.log(err);
-				}
+			state.spotify.player.on('error', (err) => {
+				console.log(err);
 			});
 
-			spotify.player.on('status-will-change', statusListener);
+			state.spotify.player.on('status-will-change', statusListener);
 		})
 		.catch(err => console.error(err));
 	}
@@ -158,14 +135,14 @@ require('./bootstrap').then(() => {
 
 	// "MAIN"
 	// ----------------------------------------------------
-	if(isPackaged) {
-		redirectOutput.setupRedirection(logPaths);
+	if(IS_PACKAGED) {
+		redirectOutput.setupRedirection(PATH_LOGS);
 	}
 
 	// Executable files need to be extracted from the package, as they can't be spawned otherwise.
 	// fs.copy() would be shorter but doesn't work with nexe.
 	fs.writeFileSync(
-		mutevolume,
+		MUTEVOLUME,
 		fs.readFileSync(path.join(__dirname, '../bin/mutevolume.exe'))
 	);
 
