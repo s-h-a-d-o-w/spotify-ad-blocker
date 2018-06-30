@@ -67,8 +67,6 @@ require('./bootstrap').then(() => {
 
 	const statusListener = (status) => {
 		if(status.next_enabled) { // NO AD
-			// It might seem like Spotify always triggers two status changes after an ad.
-			// But this is not guaranteed!
 			if(state.spotify.muted) {
 				console.log("Scheduling unmuting.");
 				state.spotify.muted = false;

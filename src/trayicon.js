@@ -12,8 +12,6 @@ const blockerAutoLaunch = new AutoLaunch({
 });
 
 const createTray = (autoLaunchEnabled) => {
-	// See: https://github.com/zaaack/node-systray#usage
-	// And: https://zaaack.github.io/node-systray/modules/_index_.html
 	const icon = fs.readFileSync(path.join(__dirname, '../assets/spotify-ad-blocker.ico'));
 	const menu = {
 		icon: icon.toString('base64'),
@@ -60,7 +58,7 @@ const createTray = (autoLaunchEnabled) => {
 				systray.kill();
 				break;
 			case 2:
-				// Only available if IS_PACKAGED === true
+				// Only available if this isn't running packaged
 				state.spotify.muted = !state.spotify.muted;
 
 				volumectrl.mute(state.spotify.muted, state.spotify.pid)
@@ -76,7 +74,8 @@ const createTray = (autoLaunchEnabled) => {
 	});
 };
 
-// Checking for whether the app is already registered to run at startup only makes sense when run as .exe
+// Checking for whether the app is already registered to
+// run at startup only makes sense when run as .exe
 if(IS_PACKAGED) {
 	blockerAutoLaunch.isEnabled()
 	.then(createTray);

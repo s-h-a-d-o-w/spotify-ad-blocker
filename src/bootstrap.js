@@ -7,12 +7,6 @@ module.exports = new Promise((resolve) => {
 	if(process.argv.includes('--cleanup')) {
 		// Clean up our temporary data. This can only be done when processlist.node
 		// was not required yet. Hence - right at the beginning.
-
-		// The only way to see whether this fails aside from actually checking whether the directory
-		// was deleted is to run this using yarn:start (setting DEBUG variable to anything but * first!) and
-		// setting isPackaged = true temporarily.
-		// And even then, we can only see exit code 1, since of course stdout/sterr point
-		// to nothing.
 		let retries = 0;
 		const doCleanup = () => {
 			try {
@@ -35,7 +29,7 @@ module.exports = new Promise((resolve) => {
 		};
 		doCleanup();
 
-		// Don't resolve/reject promise, to prevent further execution while the timeout above is waiting
+		// Don't resolve/reject promise, to prevent further code execution
 	}
 	else {
 		// Needs to be done right at the the beginning so that we can put
