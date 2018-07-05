@@ -7,8 +7,15 @@ const PATH_LOGS = {
 	ERROR: path.join(PATH_APPDATA, 'error.log'),
 };
 
+const PATHS = {
+	APPDATA: path.join(process.env.APPDATA, 'spotify-ad-blocker'),
+	DEBUG_LOG: path.join(process.env.APPDATA, 'spotify-ad-blocker/debug.log'),
+	ERROR_LOG: path.join(process.env.APPDATA, 'spotify-ad-blocker/error.log'),
+};
+
 module.exports = {
 	IS_PACKAGED,
 	PATH_APPDATA,
 	PATH_LOGS,
+	PATHS,
 };

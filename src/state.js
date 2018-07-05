@@ -4,4 +4,6 @@ const spotify = {
 	pid: -1
 };
 
-module.exports = {spotify};
+module.exports = {
+	spotify
+};

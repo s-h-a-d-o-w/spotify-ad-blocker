@@ -51,6 +51,37 @@ then save.
 [`ie4uinit.exe -ClearIconCache`](https://superuser.com/a/499079/700677) on Win7,
 `ie4uinit.exe -show` on Win10)
 
+## Development Notes
+
+### Future Linux support
+
+- This might with volumectrl implementation for Linux:    
+https://askubuntu.com/a/508230/689361  
+https://bazaar.launchpad.net/~mkayaalp/indicator-muteads/stable/files/head:/src/
+
+- `node-native-dialog` needs to offer Linux support too.  
+
+### Patches
+
+##### pkg
+
+- Patching `projectToNearby` was necessary so that pkg doesn't look for .node files where it was 
+started (execpath) but the cwd (which we manipulate).
+- Removing the override of `spawn` enables us to spawn ourselves on exit. Makes it possible for this 
+to be a standalone executable that doesn't leave a mess behind (see cleanup branch in `bootstrap.js`).
+
+##### winreg
+
+- Without this patch, toggling "Run on startup" would briefly pop up a command prompt.
+
+### Misc
+
+Since `pkg` doesn't allow for including of native addons in the package, we rename them to 
+`.foolpkg` temporarily.
+
+The npm scripts are intentionally called e.g. `beforebuild` instead of `prebuild` to ensure 
+consistency between using yarn vs. npm vs. whatever.
+
 ## TODO
 
 Nothing in terms of functionality, just improving the implementation:

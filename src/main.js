@@ -8,48 +8,65 @@ require('./bootstrap').then(() => {
 
 	const redirectOutput = require('./redirect-output.js');
 	const state = require('./state.js');
-	const {IS_PACKAGED, PATH_APPDATA, PATH_LOGS} = require('./consts.js');
+	const {IS_PACKAGED, PATHS} = require('./consts.js');
 
 
 	// NODE EVENT LISTENERS
 	// ----------------------------------------------------
-	process.on('exit', () => {
-		// Don't clean up if a log file exists that isn't empty
-		if(!((fs.existsSync(PATH_LOGS.DEBUG) && fs.statSync(PATH_LOGS.DEBUG).size > 0) ||
-			(fs.existsSync(PATH_LOGS.ERROR) && fs.statSync(PATH_LOGS.ERROR).size > 0)) ) {
+	if(IS_PACKAGED) {
+		process.on('exit', () => {
+			// Don't clean up if a log file exists that isn't empty
+			if(!((fs.existsSync(PATHS.DEBUG_LOG) && fs.statSync(PATHS.DEBUG_LOG).size > 0) ||
+				(fs.existsSync(PATHS.ERROR_LOG) && fs.statSync(PATHS.ERROR_LOG).size > 0)) ) {
 
-			// This process has to be able to exit before clean up happens - thus, use 'spawn'
-			// instead of 'spawnSync', despite the fact that all things in exit event are supposed to
-			// be sync according to the Node.js docs...
+				// This process has to be able to exit before clean up happens - thus, use 'spawn'
+				// instead of 'spawnSync', despite the fact that all things in exit event are supposed to
+				// be sync according to the Node.js docs...
 
-			// Not sure why (and not enough time to figure out right now) but we have to
-			// change back to the original directory instead of spawning process.execPath
-			// directly (which doesn't work).
-			process.chdir(path.dirname(process.execPath));
+				// Not sure why (and not enough time to figure out right now) but we have to
+				// change back to the original directory instead of spawning process.execPath
+				// directly (which doesn't work).
+				process.chdir(path.dirname(process.execPath));
 
-			// THIS ONLY WORKS WITH PKG PATCH THAT REMOVES THEIR SPAWN REPLACEMENT!
-			// (Otherwise, their spawn causes an error - IIRC about not being able to find the file)
-			spawn(
-				path.basename(process.execPath), ['--cleanup'], {
-					detached: true,
-				}
-			);
-		}
-		else {
-			console.log(`Logs exist in ${PATH_APPDATA} - temporary files were not removed.`);
-		}
-	});
+				// THIS ONLY WORKS WITH PKG PATCH THAT REMOVES THEIR SPAWN REPLACEMENT!
+				// (Otherwise, their spawn causes an error - IIRC about not being able to find the file)
+				spawn(
+					path.basename(process.execPath), ['--cleanup'], {
+						detached: true,
+					}
+				);
+			}
+			else {
+				console.log(`Logs exist in ${PATHS.APPDATA} - temporary files were not removed.`);
+			}
+		});
+	}
 	// ----------------------------------------------------
 
 
 	// FUNCTIONS
 	// ----------------------------------------------------
+	const fatalError = () => {
+		const dialog = require('node-native-dialog');
+
+		dialog.showSync({
+			msg: 'An unusual error occurred. Please email the .log files in\n' +
+				`${PATHS.APPDATA}\n` +
+				'to:\n' +
+				'ao@variations-of-shadow.com.',
+			icon: dialog.ERROR,
+			title: 'Spotify Ad Blocker',
+		});
+
+		process.exit();
+	};
+
 	// Figure out PID of client window.
 	const getSpotifyPid = () => {
 		return snapshot('name', 'pid', 'ppid').then(tasks => {
-			tasks = tasks.filter(task => task.name === 'Spotify.exe');
-
 			let spotifyPids = [];
+
+			tasks = tasks.filter(task => task.name === 'Spotify.exe');
 			tasks.forEach(task => spotifyPids.push(task.pid));
 
 			// If all pids don't contain a given parent, it's not a child itself
@@ -97,43 +114,42 @@ require('./bootstrap').then(() => {
 			}
 		}
 	};
-
-	function initWebHelper() {
-		state.spotify.player = SpotifyWebHelper().player;
-
-		return getSpotifyPid()
-		.then(() => {
-			state.spotify.player.on('open', () => {
-				console.log('Spotify is starting...');
-				getSpotifyPid();
-			});
-
-			state.spotify.player.on('closing', () => {
-				console.log('Spotify is shutting down...');
-			});
-
-			state.spotify.player.on('close', () => {
-				console.log('Spotify has shut down.');
-			});
-
-			state.spotify.player.on('error', (err) => {
-				console.log(err);
-			});
-
-			state.spotify.player.on('status-will-change', statusListener);
-		})
-		.catch(err => console.error(err));
-	}
 	// ----------------------------------------------------
 
 
 	// "MAIN"
 	// ----------------------------------------------------
 	if(IS_PACKAGED) {
-		redirectOutput.setupRedirection(PATH_LOGS);
+		redirectOutput.setup();
 	}
 
+	state.spotify.player = SpotifyWebHelper().player;
+
+	getSpotifyPid()
+	.then(() => {
+		state.spotify.player.on('open', () => {
+			console.log('Spotify is starting...');
+			getSpotifyPid();
+		});
+
+		state.spotify.player.on('closing', () => {
+			console.log('Spotify is shutting down...');
+		});
+
+		state.spotify.player.on('close', () => {
+			console.log('Spotify has shut down.');
+		});
+
+		state.spotify.player.on('error', (err) => {
+			if(err === 'FATAL ERROR')
+				fatalError();
+
+			console.error('Spotify Web Helper Error:', err);
+		});
+
+		state.spotify.player.on('status-will-change', statusListener);
+	});
+
 	require('./trayicon.js');
-	initWebHelper();
 	// ----------------------------------------------------
 });

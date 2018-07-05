@@ -1,19 +1,20 @@
 {
   "name": "spotify-ad-blocker",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "engines": {
-    "node" : ">=10.5.0"
+    "node": ">=10.5.0"
   },
   "bin": "./src/main.js",
   "main": "./src/main.js",
   "license": "MIT",
   "scripts": {
-    "build": "node-gyp rebuild && npm run build:pkg && npm run build:silentexe",
-    "build:terminal": "node-gyp rebuild && npm run build:pkg",
-    "build:pkg": "pkg . --target host --output spotify-ad-blocker.exe",
-    "build:pkg:debug": "pkg . --target host --output spotify-ad-blocker.exe --debug > pkg.log",
+    "beforebuild": "node-gyp rebuild && renamer -f .node -r .foolpkg **/*.node",
+    "build": "npm run beforebuild && npm run build:pkg && npm run build:silentexe && npm run afterbuild",
+    "build:nonsilent": "npm run prebuild && npm run build:pkg && npm run postbuild",
+    "build:pkg": "pkg . --target win --output spotify-ad-blocker.exe",
     "build:silentexe": "create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
-    "start": "cross-env DEBUG=* node .",
+    "afterbuild": "renamer -f .foolpkg -r .node **/*.foolpkg",
+    "start": "cross-env DEBUG=swh node .",
     "start:webstorm": "npm run build:mute && cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
     "postinstall": "patch-package"
   },
@@ -22,7 +23,9 @@
     "bindings": "1.3.0",
     "fecha": "2.3.3",
     "fs-extra": "6.0.1",
+    "node-native-dialog": "^1.0.1",
     "process-list": "1.2.3",
+    "renamer": "^0.7.3",
     "spotify-web-helper": "s-h-a-d-o-w/spotify-web-helper#dev",
     "systray": "1.0.5"
   },
@@ -35,7 +38,10 @@
   },
   "pkg": {
     "assets": [
-      "./assets/spotify-ad-blocker.ico"
+      "./assets/spotify-ad-blocker.ico",
+      "./node_modules/process-list/build/Release/processlist.foolpkg",
+      "./build/Release/volumectrl.foolpkg",
+      "./node_modules/winax/build/Release/node_activex.foolpkg"
     ]
   }
 }

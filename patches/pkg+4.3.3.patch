@@ -1,47 +1,8 @@
 patch-package
---- a/node_modules/pkg/lib-es5/packer.js
-+++ b/node_modules/pkg/lib-es5/packer.js
-@@ -26,11 +26,8 @@ exports.default = function (_ref) {
-     if (!hasAnyStore(record)) continue;
-     (0, _assert2.default)(record[_common.STORE_STAT], 'packer: no STORE_STAT');
- 
--    if ((0, _common.isDotNODE)(file)) {
--      continue;
--    } else {
--      (0, _assert2.default)(record[_common.STORE_BLOB] || record[_common.STORE_CONTENT] || record[_common.STORE_LINKS]);
--    }
-+    // Patched so that .node files are actually included in the package
-+    (0, _assert2.default)(record[_common.STORE_BLOB] || record[_common.STORE_CONTENT] || record[_common.STORE_LINKS]);
- 
-     if (record[_common.STORE_BLOB] && !bytecode) {
-       delete record[_common.STORE_BLOB];
---- a/node_modules/pkg/lib-es5/walker.js
-+++ b/node_modules/pkg/lib-es5/walker.js
-@@ -1112,17 +1112,9 @@ var Walker = function () {
-                   store: _common.STORE_STAT
-                 });
- 
--                if (!(0, _common.isDotNODE)(record.file)) {
--                  _context7.next = 7;
--                  break;
--                }
--
--                // provide explicit deployFiles to override
--                // native addon deployment place. see 'sharp'
--                if (!marker.hasDeployFiles) {
--                  _log.log.warn('Cannot include addon %1 into executable.', ['The addon must be distributed with executable as %2.', record.file, 'path-to-executable/' + _path2.default.basename(record.file)]);
--                }
--                return _context7.abrupt('return');
-+                // Patched to include .node files
-+                _context7.next = 7;
-+                break;
- 
-               case 7:
-                 derivatives1 = [];
 --- a/node_modules/pkg/prelude/bootstrap.js
 +++ b/node_modules/pkg/prelude/bootstrap.js
 @@ -203,9 +203,7 @@ function projectToFilesystem (f) {
- 
+
  function projectToNearby (f) {
    return require('path').join(
 -    require('path').dirname(
@@ -54,7 +15,7 @@ patch-package
 @@ -1397,20 +1395,6 @@ function payloadFileSync (pointer) {
      }
    }
- 
+
 -  childProcess.spawn = function () {
 -    var args = cloneArgs(arguments);
 -    setOptsEnv(args);

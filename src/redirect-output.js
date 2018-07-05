@@ -1,14 +1,15 @@
 const fs = require('fs');
 const fecha = require('fecha');
 
+const {PATHS} = require('./consts.js');
+
 /**
- * Since all output is redirected to files, nothing can be caught any more after this is called!
+ * Redirects stdout and stderr to provided log paths.
+ * stdout only if process is run with --debug, otherwise its output is lost.
  */
-function setupRedirection(logPaths) {
+function setup() {
 	// Redirect uncaught/unhandled things to console.error (makes logging them to file possible)
 	// ------------------------------------------------------------------------------
-	// Need to output unhandled things using console.error because they obviously
-	// aren't written properly to process.stderr - they don't end up in the error log by default.
 	process.on('uncaughtException', (err) => {
 		console.error(err);
 		setTimeout(() => process.exit(1), 500);
@@ -20,7 +21,7 @@ function setupRedirection(logPaths) {
 
 	// Redirect stdout/stderr to log files if app is run as packaged .exe
 	// --------------------------------------------------------------------
-	const stdoutFile = fs.createWriteStream(logPaths.DEBUG, {flags: 'a'});
+	const stdoutFile = fs.createWriteStream(PATHS.DEBUG_LOG, {flags: 'a'});
 	process.stdout.write = function (string, encoding) {
 		// ignore stdout if not run with --debug
 		if(process.argv.includes('--debug')) {
@@ -29,7 +30,7 @@ function setupRedirection(logPaths) {
 		}
 	};
 
-	const stderrFile = fs.createWriteStream(logPaths.ERROR, {flags: 'a'});
+	const stderrFile = fs.createWriteStream(PATHS.ERROR_LOG, {flags: 'a'});
 	process.stderr.write = function (string, encoding) {
 		string = `${fecha.format(new Date(), "HH:mm:ss.SSS")}: ${string}`;
 		stderrFile.write(string, encoding);
@@ -37,5 +38,5 @@ function setupRedirection(logPaths) {
 }
 
 module.exports = {
-	setupRedirection
+	setup
 };
