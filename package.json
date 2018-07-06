@@ -10,7 +10,7 @@
   "scripts": {
     "beforebuild": "node-gyp rebuild && renamer -f .node -r .foolpkg **/*.node",
     "build": "npm run beforebuild && npm run build:pkg && npm run build:silentexe && npm run afterbuild",
-    "build:nonsilent": "npm run prebuild && npm run build:pkg && npm run postbuild",
+    "build:nonsilent": "npm run beforebuild && npm run build:pkg && npm run afterbuild",
     "build:pkg": "pkg . --target win --output spotify-ad-blocker.exe",
     "build:silentexe": "create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
     "afterbuild": "renamer -f .foolpkg -r .node **/*.foolpkg",
