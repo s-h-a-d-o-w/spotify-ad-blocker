@@ -914,8 +914,8 @@ got@^6.7.1:
     url-parse-lax "^1.0.0"
 
 got@^8.0.0:
-  version "8.3.1"
-  resolved "https://registry.yarnpkg.com/got/-/got-8.3.1.tgz#093324403d4d955f5a16a7a8d39955d055ae10ed"
+  version "8.3.2"
+  resolved "https://registry.yarnpkg.com/got/-/got-8.3.2.tgz#1d23f64390e97f776cac52e5b936e5f514d2e937"
   dependencies:
     "@sindresorhus/is" "^0.7.0"
     cacheable-request "^2.1.1"
@@ -2141,7 +2141,7 @@ split2@^2.1.0:
 
 spotify-web-helper@s-h-a-d-o-w/spotify-web-helper#dev:
   version "1.14.0"
-  resolved "https://codeload.github.com/s-h-a-d-o-w/spotify-web-helper/tar.gz/9d9b806e1d70295b66819622a13a4f8ccb2f381b"
+  resolved "https://codeload.github.com/s-h-a-d-o-w/spotify-web-helper/tar.gz/fcdb09b892e99e999d6dde7ad16750cc70e88da1"
   dependencies:
     debug "^3.1.0"
     got "^8.0.0"
