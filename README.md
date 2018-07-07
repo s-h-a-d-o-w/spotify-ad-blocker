@@ -3,6 +3,10 @@
 
 **Windows only for now!**
 
+Simply [download the latest release](https://github.com/s-h-a-d-o-w/spotify-ad-blocker/releases/latest) and 
+run it.
+Control it through the tray icon.
+
 Blocks ads by muting Spotify (and only Spotify) while they are running.
 
 Internally a lot like [EZBlocker](https://github.com/Xeroday/Spotify-Ad-Blocker) - great stuff, 
@@ -10,21 +14,17 @@ would not have gotten the idea to do this without it!
 
 **What's different about Spotify Ad Blocker?**
 
-- No need to keep Spotify running.
-- No settings, only a "Run at startup" option (can be toggled on/off) from the tray icon.
-- Stable RAM usage (~15-40 MB - you know... caching and garbage collection) - which is great if 
-you like me have your machine running for weeks or months at a time.
-- Spotify Ad Blocker compensates for the fact that Spotify signals a bit too early that an ad is 
-done playing.
-
-## Usage
-
-Simply download the latest release and run it.
-Control it through the tray icon.
+- flexibility (Spotify doesn't need to keep running)
+- minimalism (No UI aside from the tray menu and options aside from automatic startup)
+- stability (It's alright to have your machine running for months and maybe lose internet connection once in a while)
 
 ## Bugs? 
 
-If you experience problems, run `spotify-ad-blocker.exe --debug` until those errors occur and 
+If you experience problems, please [get in touch](mailto://ao@variations-of-shadow.com).
+
+### Github users 
+
+Run `spotify-ad-blocker.exe --debug` until those errors occur and 
 then copy/paste the contents of `%APPDATA%/spotify-ad-blocker/error.log` as well as 
 `%APPDATA%/spotify-ad-blocker/debug.log` into your issue description.
 
@@ -33,7 +33,9 @@ then copy/paste the contents of `%APPDATA%/spotify-ad-blocker/error.log` as well
 The systray icon runs as a separate process, so don't be alarmed if you someday notice a 
 `tray_windows_release.exe` in your task manager and wonder where it comes from. :smile: 
 
-## Building
+## Development Notes
+
+### Building
 
 This is only relevant if you for some reason want to build this project yourself - maybe you 
 want to fork it or something. (Plus - notes to my future self :wink:) 
@@ -50,8 +52,6 @@ then save.
 (If the new icon doesn't show up in e.g. Explorer, run 
 [`ie4uinit.exe -ClearIconCache`](https://superuser.com/a/499079/700677) on Win7,
 `ie4uinit.exe -show` on Win10)
-
-## Development Notes
 
 ### Future Linux support
 
