@@ -1,16 +1,15 @@
-<p align="center"><img src="./assets/spotify-ad-blocker.png" /></p>
-<h1 align="center">Spotify Ad Blocker</h1>
+<p align="center"><img src="./assets/spotify-ad-blocker.png" width="100px" /></p>
+<h2 align="center">Spotify Ad Blocker</h2>
 
 **Windows only for now!**
 
-Simply [download the latest release](https://github.com/s-h-a-d-o-w/spotify-ad-blocker/releases/latest) and 
-run it.
-Control it through the tray icon.
+### Simply [download the latest release](https://github.com/s-h-a-d-o-w/spotify-ad-blocker/releases/latest) and run it.
 
-Blocks ads by muting Spotify (and only Spotify) while they are running.
+Spotify Ad Blocker is portable and can be controlled through the tray icon. It blocks ads by muting Spotify 
+(and only Spotify) while they are running.
 
-Internally a lot like [EZBlocker](https://github.com/Xeroday/Spotify-Ad-Blocker) - great stuff, 
-would not have gotten the idea to do this without it! 
+Inspired by [EZBlocker](https://github.com/Xeroday/Spotify-Ad-Blocker) - great stuff, would not have gotten the idea 
+to do this without it! 
 
 **What's different about Spotify Ad Blocker?**
 
