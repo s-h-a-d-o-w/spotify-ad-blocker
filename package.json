@@ -1,6 +1,6 @@
 {
   "name": "spotify-ad-blocker",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "engines": {
     "node": ">=10.5.0"
   },
@@ -41,7 +41,8 @@
       "./assets/spotify-ad-blocker.ico",
       "./node_modules/process-list/build/Release/processlist.foolpkg",
       "./build/Release/volumectrl.foolpkg",
-      "./node_modules/winax/build/Release/node_activex.foolpkg"
+      "./node_modules/winax/build/Release/node_activex.foolpkg",
+      "./node_modules/systray/traybin/tray_windows_release.exe"
     ]
   }
 }
