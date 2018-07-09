@@ -71,12 +71,9 @@ require('./bootstrap').then(() => {
 
 			// If all pids don't contain a given parent, it's not a child itself
 			// => must be the "mother" process that we're looking for.
-			for(let i = 0; i < tasks.length; i++) {
-				if(!spotifyPids.includes(tasks[i].ppid)) {
-					state.spotify.pid = tasks[i].pid;
-					break;
-				}
-			}
+			state.spotify.pid = tasks.find(task => {
+				return !spotifyPids.includes(task.ppid);
+			}).pid;
 
 			console.log(`Process ID: ${state.spotify.pid}`);
 		});
