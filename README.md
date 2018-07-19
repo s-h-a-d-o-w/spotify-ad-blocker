@@ -1,12 +1,12 @@
-<h2 align="center" style="color:red">As of 19th of July 2018, Spotify has disabled the API required for this.</h2>
-(See also: https://github.com/JohnnyCrazy/SpotifyAPI-NET/issues/254 )
+### As of 19th of July 2018, Spotify has disabled the API required for this.
+See also: https://github.com/JohnnyCrazy/SpotifyAPI-NET/issues/254
+
+## THE END (for now)
 
 <p align="center"><img src="./assets/spotify-ad-blocker.png" width="100px" /></p>
 <h2 align="center">Spotify Ad Blocker</h2>
 
 **Windows only for now!**
-
-### Simply [download the latest release](https://github.com/s-h-a-d-o-w/spotify-ad-blocker/releases/latest) and run it.
 
 Spotify Ad Blocker is portable and can be controlled through the tray icon. It blocks ads by muting Spotify 
 (and only Spotify) while they are running.
