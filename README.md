@@ -1,3 +1,6 @@
+<h2 align="center" style="color:red">As of 19th of July 2018, Spotify has disabled the API required for this.</h2>
+(See also: https://github.com/JohnnyCrazy/SpotifyAPI-NET/issues/254 )
+
 <p align="center"><img src="./assets/spotify-ad-blocker.png" width="100px" /></p>
 <h2 align="center">Spotify Ad Blocker</h2>
 
