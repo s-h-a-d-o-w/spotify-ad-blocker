@@ -1,6 +1,6 @@
-assets-raw
-build
-bin/ResourceHacker.ini
+/assets-raw
+/build
+/bin/ResourceHacker.ini
 
 # Possible builds
 /*.exe

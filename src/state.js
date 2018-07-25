@@ -1,7 +1,6 @@
 const spotify = {
-	player: null,
 	muted: false,
-	pid: -1
+	wasntRunning: true,
 };
 
 module.exports = {

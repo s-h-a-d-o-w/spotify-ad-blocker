@@ -6,10 +6,21 @@ const {PATHS, IS_PACKAGED} = require('./consts.js');
 /**
  * Native addons have to be extracted to the file system so that they can be spawned.
  * Since pkg doesn't allow for inclusion of .node files (their philosophy is "deliver them with the .exe"),
- * they have to be renamed before packaging and then renamed back during extraction.
+ * they have to be renamed to .foolkpkg before packaging.
  *
- * @param {Array<string>} addons .node file paths relative to the root directory of the repo
+ * @param {Array<string>} addons .foolpkg file paths relative to the root directory of the repo
  */
+// const extractNativeAddons = (addons) => {
+// 	addons.forEach((addon) => {
+// 		fs.writeFileSync(
+// 			path.join(PATHS.APPDATA, path.basename(addon.replace('.foolpkg', '.node'))),
+// 			fs.readFileSync(
+// 				path.join(__dirname, IS_PACKAGED ? addon : addon.replace('.foolpkg', '.node'))
+// 			)
+// 		);
+// 	});
+// };
+
 const extractNativeAddons = (addons) => {
 	addons.forEach((addon) => {
 		fs.writeFileSync(
@@ -20,6 +31,7 @@ const extractNativeAddons = (addons) => {
 		);
 	});
 };
+
 
 module.exports = new Promise((resolve) => {
 	if(process.argv.includes('--cleanup')) {
@@ -57,10 +69,19 @@ module.exports = new Promise((resolve) => {
 		fs.ensureDirSync(PATHS.APPDATA);
 		process.chdir(PATHS.APPDATA);
 
+		console.log(__dirname);
+		console.log(process.cwd());
+
+		// const packageJSON = require('../package.json');
+		// let nodeFiles = packageJSON.pkg.assets.filter((asset) => asset.endsWith('.foolpkg'));
+		// nodeFiles = nodeFiles.map((file) => (path.join('../', file)));
+		// extractNativeAddons(nodeFiles);
+
 		extractNativeAddons([
 			'../node_modules/process-list/build/Release/processlist.node',
 			'../build/Release/volumectrl.node',
-			'../node_modules/winax/build/Release/node_activex.node',
+			'../build/Release/spotify.node',
+			//'../node_modules/winax/build/Release/node_activex.node',
 		]);
 
 		resolve();
