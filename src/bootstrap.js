@@ -4,22 +4,23 @@ const fs = require('fs-extra');
 const {PATHS, IS_PACKAGED} = require('./consts.js');
 
 /**
- * Native addons have to be extracted to the file system so that they can be spawned.
+ * Native dependencies have to be extracted to the file system so that they can be spawned.
  * Since pkg doesn't allow for inclusion of .node files (their philosophy is "deliver them with the .exe"),
- * they have to be renamed before packaging and then renamed back during extraction.
+ * they have to be renamed to .foolkpkg before packaging.
  *
- * @param {Array<string>} addons .node file paths relative to the root directory of the repo
+ * @param {Array<string>} deps	file paths relative to __dirname of this file
  */
-const extractNativeAddons = (addons) => {
-	addons.forEach((addon) => {
+const extractNativeDeps = (deps) => {
+	deps.forEach((dep) => {
 		fs.writeFileSync(
-			path.join(PATHS.APPDATA, path.basename(addon)),
+			path.join(PATHS.APPDATA, path.basename(dep)),
 			fs.readFileSync(
-				path.join(__dirname, IS_PACKAGED ? addon.replace('.node', '.foolpkg') : addon)
+				path.join(__dirname, IS_PACKAGED ? dep.replace('.node', '.foolpkg') : dep)
 			)
 		);
 	});
 };
+
 
 module.exports = new Promise((resolve) => {
 	if(process.argv.includes('--cleanup')) {
@@ -57,10 +58,10 @@ module.exports = new Promise((resolve) => {
 		fs.ensureDirSync(PATHS.APPDATA);
 		process.chdir(PATHS.APPDATA);
 
-		extractNativeAddons([
+		extractNativeDeps([
 			'../node_modules/process-list/build/Release/processlist.node',
+			'../build/Release/spotify-ad-blocker_detection.exe',
 			'../build/Release/volumectrl.node',
-			'../node_modules/winax/build/Release/node_activex.node',
 		]);
 
 		resolve();

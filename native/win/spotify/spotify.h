@@ -1,0 +1,1 @@
+int isAdPlaying(int pid);
