@@ -1,6 +1,5 @@
 {
   "name": "spotify-ad-blocker",
-  "version": "1.0.2",
   "bin": "./src/main.js",
   "main": "./src/main.js",
   "license": "MIT",
