@@ -5,13 +5,14 @@ const AutoLaunch = require('auto-launch');
 const volumectrl = require('bindings')('volumectrl');
 
 const {IS_PACKAGED} = require('./consts.js');
-const state = require('./state.js');
 const blockerAutoLaunch = new AutoLaunch({
 	name: 'Spotify Ad Blocker',
 	path: process.execPath,
 });
+const state = require('./state.js');
 
 const createTray = (autoLaunchEnabled) => {
+	let muted = false;
 	const icon = fs.readFileSync(path.join(__dirname, '../assets/spotify-ad-blocker.ico'));
 	const menu = {
 		icon: icon.toString('base64'),
@@ -30,7 +31,7 @@ const createTray = (autoLaunchEnabled) => {
 	// Make Test option available only in dev environment
 	if(!IS_PACKAGED) {
 		menu.items.push({
-			title: "Test (toggle muting)",
+			title: "DEBUG ONLY: Toggle muting",
 			enabled: true
 		});
 	}
@@ -55,15 +56,16 @@ const createTray = (autoLaunchEnabled) => {
 				});
 				break;
 			case 1:
-				systray.kill();
+				volumectrl.mute(false, state.pid)
+				.then(() => systray.kill());
 				break;
 			case 2:
 				// Only available if this isn't running packaged
-				state.spotify.muted = !state.spotify.muted;
+				muted = !muted;
 
-				volumectrl.mute(state.spotify.muted, state.spotify.pid)
+				volumectrl.mute(muted, state.pid) // Enter current Spotify PID to test volumectrl
 				.then(() => {
-					console.log(`Mute on demand: ${state.spotify.muted}`);
+					console.log(`Mute on demand: ${muted}`);
 				})
 				.catch((e) => {
 					console.error(e);
