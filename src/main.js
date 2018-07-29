@@ -2,14 +2,12 @@ require('./bootstrap').then(() => {
 	const path = require('path');
 	const fs = require('fs-extra');
 	const {spawn} = require('child_process');
-	const {snapshot} = require('process-list');
+
 	const volumectrl = require('bindings')('volumectrl');
-	const spotify = require('bindings')('spotify');
-
 	const redirectOutput = require('./redirect-output.js');
+	const {AD_CHECK_INTERVAL, IS_PACKAGED, PATHS} = require('./consts.js');
+	const spotify = require('./spotify.js');
 	const state = require('./state.js');
-	const {IS_PACKAGED, PATHS} = require('./consts.js');
-
 
 	// NODE EVENT LISTENERS
 	// ----------------------------------------------------
@@ -43,64 +41,20 @@ require('./bootstrap').then(() => {
 	}
 	// ----------------------------------------------------
 
-
-	// FUNCTIONS
-	// ----------------------------------------------------
-	const getSpotifyPid = () => {
-		return new Promise((resolve, reject) => {
-			snapshot('name', 'pid', 'ppid').then(tasks => {
-				tasks = tasks.filter(task => task.name === 'Spotify.exe');
-				if(tasks.length === 0) {
-					reject("Spotify isn't running");
-					return;
-				}
-
-				let spotifyPids = [];
-				tasks.forEach(task => spotifyPids.push(task.pid));
-
-				// If all pids don't contain a given parent, it's not a child itself
-				// => must be the "mother" process that we're looking for.
-				resolve(tasks.find(task => {
-					return !spotifyPids.includes(task.ppid);
-				}).pid);
-			});
-		});
-	};
-
-	const waitForSpotifyDeath = (pid) => {
-		return new Promise((resolve, reject) => {
-			snapshot('pid')
-			.then(tasks => {
-				tasks = tasks.filter(task => task.pid === pid);
-				if(tasks.length > 0) {
-					console.log("Waiting for Spotify process to be dead...");
-					setTimeout(waitForSpotifyDeath, 500);
-				}
-				else {
-					resolve();
-				}
-			})
-			.catch(reject);
-		});
-	};
-	// ----------------------------------------------------
-
-
 	// "MAIN"
 	// ----------------------------------------------------
 	if(IS_PACKAGED) {
 		redirectOutput.setup();
 	}
 
-
 	(function init() {
 		let muted = false;
 		let wasntRunning = true;
-		let adCheckInterval = 200;
 
-		getSpotifyPid()
+		spotify.getPid()
 		.then((pid) => {
 			console.log(`Process ID: ${pid}`);
+			state.pid = pid;
 
 			(function checkForAd() {
 				spotify.isAdPlaying(pid)
@@ -113,7 +67,7 @@ require('./bootstrap').then(() => {
 						volumectrl.mute(muted, pid)
 						.then(() => {
 							console.log('Muted.');
-							setTimeout(checkForAd, adCheckInterval);
+							setTimeout(checkForAd, AD_CHECK_INTERVAL);
 						});
 					}
 					else if(!adIsPlaying && muted) {
@@ -133,28 +87,30 @@ require('./bootstrap').then(() => {
 							}
 						}
 
+						// Used to be that we could delay unmuting, since Spotify signals the end too early
+						// and so one hears the end of the ad. This doesn't work any more because sound is also
+						// muted whenever the user pauses.
 						volumectrl.mute(muted, pid)
 						.then(() => {
 							console.log('Unmuted.');
-							setTimeout(checkForAd, adCheckInterval);
+							checkForAd();
 						});
 					}
 					else {
-						setTimeout(checkForAd, adCheckInterval);
+						setTimeout(checkForAd, AD_CHECK_INTERVAL);
 					}
 				})
-				.catch(() => {
-					console.log("Spotify has probably shut down.");
+				.catch((e) => {
+					console.log(`Spotify has probably shut down. (${e})`);
 
-					waitForSpotifyDeath(pid)
+					spotify.waitForDeath(pid)
 					.then(() => {
 						wasntRunning = true;
-						init();
 					})
-					.catch((e) => {
-						console.error(e);
-						init();
-					});
+					.catch((err) => {
+						console.error(err);
+					})
+					.finally(init);
 				})
 			})();
 		})
@@ -166,5 +122,10 @@ require('./bootstrap').then(() => {
 	})();
 
 	require('./trayicon.js');
+
+	// Improve RAM usage statistics a bit, as it seems like there
+	// is a lot of garbage generated specifically on startup (starts at
+	// ~18 MB but never goes above ~13 MB when running for days)
+	setTimeout(global.gc, 5000);
 	// ----------------------------------------------------
 });

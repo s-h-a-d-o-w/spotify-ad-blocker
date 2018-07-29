@@ -1,3 +1,4 @@
+//Based on: https://github.com/zserge/tray/blob/master/tray.h
 #ifndef TRAY_H
 #define TRAY_H
 
@@ -68,13 +69,16 @@ static GtkMenuShell *_tray_menu(struct tray_menu *m) {
 }
 
 static int tray_init(struct tray *tray) {
+  printf("A");
   if (gtk_init_check(0, NULL) == FALSE) {
+	  printf("B");
     return -1;
   }
   indicator = app_indicator_new(TRAY_APPINDICATOR_ID, tray->icon,
                                 APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
   app_indicator_set_status(indicator, APP_INDICATOR_STATUS_ACTIVE);
   tray_update(tray);
+  printf("init");
   return 0;
 }
 
@@ -208,6 +212,7 @@ static LRESULT CALLBACK _tray_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam,
     if (lparam == WM_LBUTTONUP || lparam == WM_RBUTTONUP) {
       POINT p;
       GetCursorPos(&p);
+      SetForegroundWindow(hwnd);
       WORD cmd = TrackPopupMenu(hmenu, TPM_LEFTALIGN | TPM_RIGHTBUTTON |
                                            TPM_RETURNCMD | TPM_NONOTIFY,
                                 p.x, p.y, 0, hwnd, NULL);
@@ -267,6 +272,7 @@ static HMENU _tray_menu(struct tray_menu *m, UINT *id) {
 }
 
 static int tray_init(struct tray *tray) {
+printf("A\n");
   memset(&wc, 0, sizeof(wc));
   wc.cbSize = sizeof(WNDCLASSEX);
   wc.lpfnWndProc = _tray_wnd_proc;
@@ -275,12 +281,14 @@ static int tray_init(struct tray *tray) {
   if (!RegisterClassEx(&wc)) {
     return -1;
   }
+printf("A\n");
 
   hwnd = CreateWindowEx(0, WC_TRAY_CLASS_NAME, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   if (hwnd == NULL) {
     return -1;
   }
   UpdateWindow(hwnd);
+printf("A\n");
 
   memset(&nid, 0, sizeof(nid));
   nid.cbSize = sizeof(NOTIFYICONDATA);
@@ -289,6 +297,7 @@ static int tray_init(struct tray *tray) {
   nid.uFlags = NIF_ICON | NIF_MESSAGE;
   nid.uCallbackMessage = WM_TRAY_CALLBACK_MESSAGE;
   Shell_NotifyIcon(NIM_ADD, &nid);
+printf("A\n");
 
   tray_update(tray);
   return 0;
@@ -310,17 +319,23 @@ static int tray_loop(int blocking) {
 }
 
 static void tray_update(struct tray *tray) {
+printf("B\n");
   HMENU prevmenu = hmenu;
   UINT id = ID_TRAY_FIRST;
+printf("B\n");
   hmenu = _tray_menu(tray->menu, &id);
+printf("B\n");
   SendMessage(hwnd, WM_INITMENUPOPUP, (WPARAM)hmenu, 0);
   HICON icon;
+printf("B\n");
   ExtractIconEx(tray->icon, 0, NULL, &icon, 1);
+printf("B\n");
   if (nid.hIcon) {
     DestroyIcon(nid.hIcon);
   }
   nid.hIcon = icon;
   Shell_NotifyIcon(NIM_MODIFY, &nid);
+printf("B\n");
 
   if (prevmenu != NULL) {
     DestroyMenu(prevmenu);

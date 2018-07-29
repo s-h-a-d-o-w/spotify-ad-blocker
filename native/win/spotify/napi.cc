@@ -70,7 +70,7 @@ void execute(napi_env env, void* pData) {
 void complete(napi_env env, napi_status status, void* pData) {
 	AsyncData* data = (AsyncData*)pData;
 
-	if(data->adPlaying >= 0) {
+	if(data->adPlaying < 2) {
 		napi_value adStatus;
 		napi_get_boolean(env, data->adPlaying == 1, &adStatus);
 

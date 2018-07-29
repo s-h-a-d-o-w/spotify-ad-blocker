@@ -1,22 +1,20 @@
 {
   "name": "spotify-ad-blocker",
   "version": "1.0.2",
-  "engines": {
-    "node": ">=10.5.0"
-  },
   "bin": "./src/main.js",
   "main": "./src/main.js",
   "license": "MIT",
   "scripts": {
     "beforebuild": "node-gyp rebuild && renamer -f .node -r .foolpkg **/*.node",
-    "build": "npm run beforebuild && npm run build:pkg && npm run build:silentexe && npm run afterbuild",
+    "build": "npm run beforebuild && npm run build:detection && npm run build:pkg && npm run build:silentexe && npm run afterbuild",
+    "build:detection": "g++ native\\win\\spotify\\spotify.cc -o build\\Release\\spotify-ad-blocker_detection.exe",
     "build:nonsilent": "npm run beforebuild && npm run build:pkg && npm run afterbuild",
     "build:log": "npm run beforebuild && npm run build:pkg:log && npm run afterbuild",
-    "build:pkg": "pkg . --target win --output spotify-ad-blocker.exe",
+    "build:pkg": "pkg . --options expose-gc --target win --output spotify-ad-blocker.exe",
     "build:pkg:log": "pkg . --debug --target win --output spotify-ad-blocker.exe > pkg.log",
     "build:silentexe": "create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
     "afterbuild": "renamer -f .foolpkg -r .node **/*.foolpkg",
-    "start": "cross-env DEBUG=swh node .",
+    "start": "cross-env DEBUG=swh node --expose-gc .",
     "start:webstorm": "npm run build:mute && cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
     "postinstall": "patch-package"
   },
@@ -31,6 +29,7 @@
   "devDependencies": {
     "create-nodew-exe": "1.0.4",
     "cross-env": "5.1.4",
+    "nexe": "^2.0.0-rc.31",
     "patch-package": "5.1.1",
     "pkg": "4.3.3",
     "postinstall-postinstall": "1.0.0",
@@ -38,11 +37,11 @@
   },
   "pkg": {
     "assets": [
-      "./assets/spotify-ad-blocker.ico",
-      "./node_modules/process-list/build/Release/processlist.foolpkg",
       "./build/Release/volumectrl.foolpkg",
-      "./build/Release/spotify.foolpkg",
-      "./node_modules/systray/traybin/tray_windows_release.exe"
+      "./build/Release/spotify-ad-blocker_detection.exe",
+      "./assets/spotify-ad-blocker.ico",
+      "./node_modules/systray/traybin/tray_windows_release.exe",
+      "./node_modules/process-list/build/Release/processlist.foolpkg"
     ]
   }
 }

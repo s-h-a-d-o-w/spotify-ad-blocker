@@ -4,29 +4,18 @@ const fs = require('fs-extra');
 const {PATHS, IS_PACKAGED} = require('./consts.js');
 
 /**
- * Native addons have to be extracted to the file system so that they can be spawned.
+ * Native dependencies have to be extracted to the file system so that they can be spawned.
  * Since pkg doesn't allow for inclusion of .node files (their philosophy is "deliver them with the .exe"),
  * they have to be renamed to .foolkpkg before packaging.
  *
- * @param {Array<string>} addons .foolpkg file paths relative to the root directory of the repo
+ * @param {Array<string>} deps	file paths relative to __dirname of this file
  */
-// const extractNativeAddons = (addons) => {
-// 	addons.forEach((addon) => {
-// 		fs.writeFileSync(
-// 			path.join(PATHS.APPDATA, path.basename(addon.replace('.foolpkg', '.node'))),
-// 			fs.readFileSync(
-// 				path.join(__dirname, IS_PACKAGED ? addon : addon.replace('.foolpkg', '.node'))
-// 			)
-// 		);
-// 	});
-// };
-
-const extractNativeAddons = (addons) => {
-	addons.forEach((addon) => {
+const extractNativeDeps = (deps) => {
+	deps.forEach((dep) => {
 		fs.writeFileSync(
-			path.join(PATHS.APPDATA, path.basename(addon)),
+			path.join(PATHS.APPDATA, path.basename(dep)),
 			fs.readFileSync(
-				path.join(__dirname, IS_PACKAGED ? addon.replace('.node', '.foolpkg') : addon)
+				path.join(__dirname, IS_PACKAGED ? dep.replace('.node', '.foolpkg') : dep)
 			)
 		);
 	});
@@ -69,19 +58,10 @@ module.exports = new Promise((resolve) => {
 		fs.ensureDirSync(PATHS.APPDATA);
 		process.chdir(PATHS.APPDATA);
 
-		console.log(__dirname);
-		console.log(process.cwd());
-
-		// const packageJSON = require('../package.json');
-		// let nodeFiles = packageJSON.pkg.assets.filter((asset) => asset.endsWith('.foolpkg'));
-		// nodeFiles = nodeFiles.map((file) => (path.join('../', file)));
-		// extractNativeAddons(nodeFiles);
-
-		extractNativeAddons([
+		extractNativeDeps([
 			'../node_modules/process-list/build/Release/processlist.node',
+			'../build/Release/spotify-ad-blocker_detection.exe',
 			'../build/Release/volumectrl.node',
-			'../build/Release/spotify.node',
-			//'../node_modules/winax/build/Release/node_activex.node',
 		]);
 
 		resolve();

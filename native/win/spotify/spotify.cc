@@ -1,44 +1,97 @@
-#include <vcclr.h>
+// The base for below is this:
+// https://stackoverflow.com/a/21767578/5040168
 
-#using <System.dll>
+#include <windows.h>
+#include <iostream>
+#include <string>
 
-using namespace System;
-using namespace System::Diagnostics;
+using namespace std;
 
-gcroot<Process^> spotify = nullptr;
+struct Spotify {
+	HWND handle;
+	int pid;
+};
+Spotify spotify;
 
+struct ParamWindow
+{
+	unsigned long ulPID;
+	HWND hWnd_out;
+};
+
+BOOL isMainWindow(HWND handle)
+{
+	return GetWindow(handle, GW_OWNER) == (HWND)0 && IsWindowVisible(handle);
+}
+
+// Find Spotify's handle among all windows
+BOOL CALLBACK enumWindowsCallback(HWND handle, LPARAM lParam)
+{
+	ParamWindow& param = *(ParamWindow*)lParam;
+	unsigned long pid = 0;
+
+	GetWindowThreadProcessId(handle, &pid);
+
+	// A single process can have many handles, only that of the main
+	// window can be used to get the title
+	if(param.ulPID != pid || !isMainWindow(handle))
+		return TRUE;
+
+	param.hWnd_out = handle;
+	return FALSE;
+}
+
+HWND getHandle(unsigned long pid)
+{
+	ParamWindow param;
+	param.ulPID = pid;
+	param.hWnd_out = 0;
+
+	EnumWindows(enumWindowsCallback, (LPARAM)&param);
+
+	return param.hWnd_out;
+}
+
+// Return is int instead of bool to allow simple communication of errors
+// when this is used with N-API instead of a standalone .exe. (Who knows, maybe that'll work again
+// at some point - currently: "Error: Invalid access to memory location.")
 int isAdPlaying(int pid) {
-	if(static_cast<Process^>(spotify) != nullptr && pid == spotify->Id) {
-		spotify->Refresh();
+	// Get handle of Spotify window if it's not already stored
+	if(!(spotify.pid == pid && spotify.handle)) {
+		spotify.pid = pid;
+		spotify.handle = getHandle(pid);
 
-		if(spotify->HasExited) {
-			Console::WriteLine("Process has exited.");
-			spotify = nullptr;
-			return -1;
-		}
+		if(spotify.handle == 0)
+			return 2;
+	}
 
-		//Console::WriteLine(DateTime::Now + spotify->MainWindowTitle);
-		bool adPlaying;
+	// Get current window title
+	int len = 1 + GetWindowTextLength(spotify.handle);
+	char* title = new char[len];
+	// Use ANSI version to avoid having to use uncommon types/functions
+	int result = GetWindowTextA(spotify.handle, title, len);
+
+	if(result == 0 && GetLastError() != ERROR_SUCCESS) {
+		delete[] title;
+		return 2;
+	}
+	else {
+		bool isAd = strstr(title, " - ") == NULL;
+		delete[] title;
+		return isAd ? 1 : 0;
+	}
+}
+
+int main() {
+	// pid and result of ad check are communicated via stdin/stdout
+	for(string pid; getline(cin, pid);) {
 		try {
-			adPlaying = spotify->MainWindowTitle->Contains(" - ");
-			return adPlaying ? 0 : 1;
+			cout << isAdPlaying(stoi(pid));
 		}
 		catch(...) {
-			return -1;
+			cout << "Input has to be a number!" << endl;
 		}
 	}
 
-	//Console::WriteLine("Grabbing new process (pid:" + pid + ")");
-
-	String^ title = "";
-	try {
-		spotify = Process::GetProcessById(pid);
-
-		//Console::WriteLine("Window title (pid: " + spotify->Id + "): " + spotify->MainWindowTitle);
-		return spotify->MainWindowTitle->Contains(" - ") ? 0 : 1;
-	}
-	catch(...) {
-		//Console::WriteLine("Could not find process (pid: " + pid + ")");
-		return -1;
-	}
+	return 0;
 }
