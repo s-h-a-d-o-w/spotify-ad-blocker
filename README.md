@@ -15,7 +15,6 @@ to do this without it!
 
 - flexibility (Spotify doesn't need to keep running)
 - minimalism (No UI aside from the tray menu and options aside from automatic startup)
-- stability (It's alright to have your machine running for months and maybe lose internet connection once in a while)
 
 ## Bugs? 
 

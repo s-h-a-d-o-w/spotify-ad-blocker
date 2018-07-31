@@ -73,7 +73,7 @@ int isAdPlaying(int pid) {
 
 	if(result == 0 && GetLastError() != ERROR_SUCCESS) {
 		delete[] title;
-		return 2;
+		return 3;
 	}
 	else {
 		bool isAd = strstr(title, " - ") == NULL;

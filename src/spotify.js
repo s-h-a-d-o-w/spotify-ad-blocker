@@ -52,10 +52,11 @@ const waitForDeath = (pid) => {
 		.then(tasks => {
 			tasks = tasks.filter(task => task.pid === pid);
 			if(tasks.length > 0) {
-				console.log('Waiting for Spotify process to be dead...');
-				setTimeout(waitForDeath, 500);
+				console.log(`Waiting for Spotify process (pid ${pid}) to be dead...`);
+				setTimeout(() => waitForDeath(pid).then(resolve).catch(reject), 1000);
 			}
 			else {
+				console.log('Process has died');
 				resolve();
 			}
 		})

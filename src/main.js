@@ -28,11 +28,11 @@ require('./bootstrap').then(() => {
 
 				// THIS ONLY WORKS WITH PKG PATCH THAT REMOVES THEIR SPAWN REPLACEMENT!
 				// (Otherwise, their spawn causes an error - IIRC about not being able to find the file)
-				spawn(
-					path.basename(process.execPath), ['--cleanup'], {
-						detached: true,
-					}
-				);
+				spawn(path.basename(process.execPath), [
+					'--cleanup',
+				], {
+					detached: true,
+				});
 			}
 			else {
 				console.log(`Logs exist in ${PATHS.APPDATA} - temporary files were not removed.`);
@@ -52,6 +52,11 @@ require('./bootstrap').then(() => {
 		let wasntRunning = true;
 
 		spotify.getPid()
+		.then((pid) => new Promise((resolve) => {
+			// If Spotify was started after the blocker, we need
+			// to give it a bit of time to create its main window.
+			setTimeout(() => resolve(pid), 1000);
+		}))
 		.then((pid) => {
 			console.log(`Process ID: ${pid}`);
 			state.pid = pid;
@@ -104,12 +109,8 @@ require('./bootstrap').then(() => {
 					console.log(`Spotify has probably shut down. (${e})`);
 
 					spotify.waitForDeath(pid)
-					.then(() => {
-						wasntRunning = true;
-					})
-					.catch((err) => {
-						console.error(err);
-					})
+					.then(() => wasntRunning = true)
+					.catch((err) => console.error(err))
 					.finally(init);
 				})
 			})();

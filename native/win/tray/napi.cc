@@ -59,7 +59,7 @@ tray tray = {
 */
 
 struct itemmap {
-	napi_value id;
+	napi_ref id;
 	tray_menu* item;
 };
 
@@ -135,9 +135,10 @@ printf("F %d\n", numItems);
 		//napi_create_uint32(env, i, &n_id); // <<< n_id always points to the same address!!! would have to change!!
 		//imap[i].id = i;
 
+		napi_create_reference(env, n_id, 1, &(imap[i].id)); // do i need parens here?
 
 		// Map id to current item for later use
-		imap[i].id = n_id;
+		//imap[i].id = n_id;
 		imap[i].item = &items[i];
 	}
 
@@ -186,7 +187,11 @@ napi_value loop(napi_env env, napi_callback_info info) {
     	//napi_value* arguments;
     	//napi_value arguments[1] = {found == -1 ? undefined : imap[found].id}; // replace by correct id at some point
     	napi_value arguments[1];
-    	arguments[0] = found == -1 ? undefined : imap[found].id;
+    	//arguments[0] = found == -1 ? undefined : imap[found].id;
+    	printf("before getting ref\n");
+    	NAPI_CALL(env, napi_get_reference_value(env, imap[found].id, &(arguments[0])));
+    	printf("after getting ref\n");
+
     	//napi_create_uint32(env, imap[found].id, &arguments[0]); // <<< n_id always points to the same address!!! would have to change!!
     	//napi_value arguments[1];
     	//NAPI_CALL(env, napi_get_null(env, &arguments[0]));
