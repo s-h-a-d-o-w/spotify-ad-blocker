@@ -1,9 +1,14 @@
-// hello.cc using N-API
 #include <node_api.h>
 
 #include <queue>
 #include <cstdio>
+
+#include <chrono>
+#include <thread>
+#include <mutex>
+
 #include "tray.h"
+
 
 // Great macros:
 // https://github.com/luismreis/node-openvg/blob/7dc7a142905afcb485f4ea7da33826210d0dc066/src/node-common.h#L39
@@ -43,42 +48,102 @@
 	NAPI_CALL_BASE(env, the_call, NAPI_RETVAL_NOTHING)
 
 
-// GLOBALS
-// ===============================================
-napi_value undefined;
-// ===============================================
-
-/*
-tray tray = {
-    .icon = "icon.png",
-    .menu = (struct tray_menu[]){{"Toggle me", 0, 0, toggle_cb, NULL},
-                                 {"-", 0, 0, NULL, NULL},
-                                 {"Quit", 0, 0, quit_cb, NULL},
-                                 {NULL, 0, 0, NULL, NULL}},
-};
-*/
-
+// Maps ids to menu items so that they can be return in click callback
 struct itemmap {
 	napi_ref id;
 	tray_menu* item;
 };
 
+
+// GLOBAL VARIABLES
+// ===============================================
+napi_value undefined;
+napi_threadsafe_function threadSafeCallback;
+
+tray nodeTray;
+tray_menu* items;
 uint32_t numItems;
 itemmap* imap;
-napi_value cbClick;
 
+std::mutex mtx;
+std::condition_variable cv;
 std::queue<tray_menu*> eventQueue;
+// ===============================================
 
+
+// Triggered from inside tray.h
 void onClick(tray_menu* item) {
-	printf("onClick triggered\n");
 	eventQueue.push(item);
+	cv.notify_all();
 }
 
-// Sets up the call to volumectrl.mute to be async
+// Bridge between onClick() and the JS click event handler provided to create()
+void threadSafeCallbackImpl(napi_env env, napi_value js_callback, void* context, void* data) {
+	itemmap mapEntry = imap[*(int*)data];
+
+	napi_value cbArguments[1];
+	NAPI_CALL_RETURN_VOID(env, napi_get_reference_value(env, mapEntry.id, &(cbArguments[0])));
+
+	// Construct return object
+	napi_value retval[1];
+	NAPI_CALL_RETURN_VOID(env, napi_create_object(env, &(retval[0])));
+	NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, retval[0], "wrappedId", cbArguments[0]));
+
+	napi_value text;
+	napi_value enabled;
+	napi_value checked;
+	napi_create_string_utf8(env, mapEntry.item->text, NAPI_AUTO_LENGTH, &text);
+	napi_get_boolean(env, !mapEntry.item->disabled, &enabled);
+	napi_get_boolean(env, mapEntry.item->checked, &checked);
+	NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, retval[0], "text", text));
+	NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, retval[0], "enabled", enabled));
+	NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, retval[0], "checked", checked));
+
+
+	NAPI_CALL_RETURN_VOID(env, napi_call_function(env, undefined, js_callback, 1, retval, NULL));
+}
+
+
+// THREADS
+// ================================================================================
+void asyncTrayEvents(napi_env env, void* pData) {
+	while(true) {
+		std::unique_lock<std::mutex> lck(mtx);
+		cv.wait(lck, []{ return !eventQueue.empty(); });
+
+		while(!eventQueue.empty()) {
+			tray_menu* item = eventQueue.front();
+			eventQueue.pop();
+
+			int found = -1;
+			for(int i = 0; i < numItems; i++) {
+				if(imap[i].item == item) {
+					found = i;
+					break;
+				}
+			}
+
+			NAPI_CALL_RETURN_VOID(env, napi_call_threadsafe_function(threadSafeCallback,
+                              &found, napi_tsfn_blocking));
+		}
+	}
+}
+
+
+void asyncTrayCreation(napi_env env, void* pData) {
+	tray_init((tray*)pData);
+
+	while(tray_loop(1) == 0) { }
+}
+// ================================================================================
+
+
+// EXPORTED FUNCTIONS
+// =============================================================================================
 napi_value create(napi_env env, napi_callback_info info) {
 	// Get caller arguments
-	size_t argc = 3;
-	napi_value args[3];
+	size_t argc = 4;
+	napi_value args[4];
 	NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, NULL, NULL));
 
 	// Extract individual arguments
@@ -87,35 +152,35 @@ napi_value create(napi_env env, napi_callback_info info) {
 	size_t lenIcon;
 	NAPI_CALL(env, napi_get_value_string_utf8(env, args[0], NULL, 0, &lenIcon));
 	icon = new char[lenIcon + 1];
-	NAPI_CALL(env, napi_get_value_string_utf8(env, args[0], icon, lenIcon, &lenIcon));
+	NAPI_CALL(env, napi_get_value_string_utf8(env, args[0], icon, lenIcon + 1, &lenIcon));
 
-printf("E");
+	char* tooltip;
+	size_t lenTooltip;
+	NAPI_CALL(env, napi_get_value_string_utf8(env, args[1], NULL, 0, &lenTooltip));
+	tooltip = new char[lenTooltip + 1];
+	NAPI_CALL(env, napi_get_value_string_utf8(env, args[1], tooltip, lenTooltip + 1, &lenTooltip));
 
-	tray_menu* items;
-	NAPI_CALL(env, napi_get_array_length(env, args[1], &numItems));
+
+	NAPI_CALL(env, napi_get_array_length(env, args[2], &numItems));
 	items = new tray_menu[numItems + 1];
 	imap = new itemmap[numItems];
-printf("F %d\n", numItems);
 	for(int i = 0; i < numItems; i++) {
 		napi_value n_item;
-		NAPI_CALL(env, napi_get_element(env, args[1], i, &n_item));
-		printf("G %d\n", i);
+		NAPI_CALL(env, napi_get_element(env, args[2], i, &n_item));
 
 		napi_value n_id;
 		napi_value n_text;
 		napi_value n_enabled;
 		napi_value n_checked;
-		NAPI_CALL(env, napi_get_named_property(env, n_item, "id", &n_id));
+		NAPI_CALL(env, napi_get_named_property(env, n_item, "wrappedId", &n_id));
 		NAPI_CALL(env, napi_get_named_property(env, n_item, "text", &n_text));
 		NAPI_CALL(env, napi_get_named_property(env, n_item, "enabled", &n_enabled));
 		NAPI_CALL(env, napi_get_named_property(env, n_item, "checked", &n_checked));
-		printf("G %d\n", i);
 
 		size_t lenTitle;
 		NAPI_CALL(env, napi_get_value_string_utf8(env, n_text, NULL, 0, &lenTitle));
 		items[i].text = new char[lenTitle + 1];
 		NAPI_CALL(env, napi_get_value_string_utf8(env, n_text, items[i].text, lenTitle + 1, &lenTitle));
-		printf("G %d\n", i);
 
 		bool enabled;
 		bool checked;
@@ -123,106 +188,131 @@ printf("F %d\n", numItems);
 		NAPI_CALL(env, napi_get_value_bool(env, n_checked, &checked));
 		items[i].disabled = !enabled;
 		items[i].checked = checked;
-		printf("G %d\n", i);
 
 		items[i].cb = onClick;
 		items[i].context = NULL;
 		items[i].submenu = NULL;
 
-
-		//int32_t whatever;
-		//napi_get_value_int32(env, n_id, &whatever);
-		//napi_create_uint32(env, i, &n_id); // <<< n_id always points to the same address!!! would have to change!!
-		//imap[i].id = i;
-
-		napi_create_reference(env, n_id, 1, &(imap[i].id)); // do i need parens here?
-
-		// Map id to current item for later use
-		//imap[i].id = n_id;
+		// Map id to current item for later use. Reference is needed so that the memory isn't freed.
+		NAPI_CALL(env, napi_create_reference(env, n_id, 1, &(imap[i].id)));
 		imap[i].item = &items[i];
 	}
 
 	// Last item - NULL item
 	items[numItems].text = NULL;
 
-//	for(int i = 0; i < numItems + 1; i++) {
-//		printf("%s %d %d %d %d %d\n", items[i].text, items[i].disabled, items[i].checked, items[i].cb, items[i].context, items[i].submenu);
-//	}
+
+	// Setup and queue our async work
+	// There are no complete functions because these threads will run permanently
+	nodeTray.icon = icon;
+	nodeTray.tooltip = tooltip;
+	nodeTray.menu = items;
+
+	napi_async_work workCreation;
+	napi_value workNameCreation;
+
+	napi_create_string_utf8(env, "work:tray:mainloop", NAPI_AUTO_LENGTH, &workNameCreation);
+	NAPI_CALL(env, napi_create_async_work(env, NULL, workNameCreation, asyncTrayCreation, NULL, &nodeTray, &workCreation));
+
+	NAPI_CALL(env, napi_queue_async_work(env, workCreation));
 
 
-	// Callback function has to be called using napi_call_function(env, global, add_two, argc, argv, &return_val);
-	cbClick = args[2];
+	napi_async_work workEvents;
+	napi_value workNameEvents;
+	napi_create_string_utf8(env, "work:tray:events", NAPI_AUTO_LENGTH, &workNameEvents);
+	NAPI_CALL(env, napi_create_async_work(env, NULL, workNameEvents, asyncTrayEvents, NULL, NULL, &workEvents));
+
+	NAPI_CALL(env, napi_queue_async_work(env, workEvents));
 
 
-	tray* mytray = new tray();
-	mytray->icon = "./assets/spotify-ad-blocker.ico";
-	mytray->menu = items;
-	tray_init(mytray);
+	// Hook up click callback function in a way that it can be called from the work:tray:events thread
+	// Added in node v10.6.0
+	napi_value async_resource_name;
+	napi_create_string_utf8(env, "threadsafe:clickcallback", NAPI_AUTO_LENGTH, &async_resource_name);
+	NAPI_CALL(env, napi_create_threadsafe_function(env, args[3], NULL, async_resource_name, 0, 1,
+		NULL, NULL, NULL, threadSafeCallbackImpl, &threadSafeCallback));
 
 	return undefined;
 }
 
-napi_value loop(napi_env env, napi_callback_info info) {
+napi_value update(napi_env env, napi_callback_info info) {
+	// Get caller arguments
 	size_t argc = 1;
 	napi_value args[1];
-	if(!eventQueue.empty()) {
-		NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, NULL, NULL));
+	NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, NULL, NULL));
+
+	// Find item to update
+	napi_value n_id;
+	NAPI_CALL(env, napi_get_named_property(env, args[0], "wrappedId", &n_id));
+
+	int found = -1;
+	bool isEqual;
+	for(int i = 0; i < numItems; i++) {
+		napi_value currId;
+		NAPI_CALL(env, napi_get_reference_value(env, imap[i].id, &currId));
+
+		NAPI_CALL(env, napi_strict_equals(env, currId, n_id, &isEqual));
+		if(isEqual) {
+			found = i;
+			break;
+		}
 	}
 
-	while(!eventQueue.empty()) {
-		printf("Eventqueue: %d\n", eventQueue.size());
-		tray_menu* item = eventQueue.front();
-		eventQueue.pop();
+	if(found > -1) {
+		napi_value n_text;
+		napi_value n_enabled;
+		napi_value n_checked;
+		NAPI_CALL(env, napi_get_named_property(env, args[0], "text", &n_text));
+		NAPI_CALL(env, napi_get_named_property(env, args[0], "enabled", &n_enabled));
+		NAPI_CALL(env, napi_get_named_property(env, args[0], "checked", &n_checked));
 
-		int found = -1;
-    	for(int i = 0; i < numItems; i++) {
-    		printf("Item[%d]: %d\n", i, imap[i].id);
-    		if(imap[i].item == item) {
-    			found = i;
-    			break;
-    		}
-    	}
-    	printf("Found: %d\n", found);
 
-    	//napi_value* arguments;
-    	//napi_value arguments[1] = {found == -1 ? undefined : imap[found].id}; // replace by correct id at some point
-    	napi_value arguments[1];
-    	//arguments[0] = found == -1 ? undefined : imap[found].id;
-    	printf("before getting ref\n");
-    	NAPI_CALL(env, napi_get_reference_value(env, imap[found].id, &(arguments[0])));
-    	printf("after getting ref\n");
+		size_t lenTitle;
+		NAPI_CALL(env, napi_get_value_string_utf8(env, n_text, NULL, 0, &lenTitle));
+		delete[] items[found].text;
+		items[found].text = new char[lenTitle + 1];
+		NAPI_CALL(env, napi_get_value_string_utf8(env, n_text, items[found].text, lenTitle + 1, &lenTitle));
 
-    	//napi_create_uint32(env, imap[found].id, &arguments[0]); // <<< n_id always points to the same address!!! would have to change!!
-    	//napi_value arguments[1];
-    	//NAPI_CALL(env, napi_get_null(env, &arguments[0]));
+		bool enabled;
+		bool checked;
+		NAPI_CALL(env, napi_get_value_bool(env, n_enabled, &enabled));
+		NAPI_CALL(env, napi_get_value_bool(env, n_checked, &checked));
+		items[found].disabled = !enabled;
+		items[found].checked = checked;
 
-		napi_value global;
-		NAPI_CALL(env, napi_get_global(env, &global));
 
-    	napi_value retval;
-		NAPI_CALL(env, napi_call_function(env, global, args[0], 1, arguments, &retval));
-		//napi_call_function(env, undefined, cbClick, 1, argv, NULL);
-    	printf("After call\n");
+		tray_update(&nodeTray);
 	}
-	// Problem: Where to get "env" from?!
-	//napi_call_function(env, undefined, cbClick, 1, argv, NULL);
-
-	tray_loop(0);
+	else {
+		NAPI_CALL(env, napi_throw_error(env, "N-API", "Tray item for provided id could not be found."));
+	}
 
 	return undefined;
 }
+
+napi_value exit(napi_env env, napi_callback_info info) {
+	tray_exit();
+	delete[] imap;
+	delete[] items;
+	return undefined;
+}
+// =============================================================================================
 
 napi_value init(napi_env env, napi_value exports) {
 	NAPI_CALL(env, napi_get_undefined(env, &undefined));
 
-	// Export native function
-	napi_value fn;
-	NAPI_CALL(env, napi_create_function(env, NULL, 0, create, NULL, &fn));
-	NAPI_CALL(env, napi_set_named_property(env, exports, "create", fn));
+	// Export functions
+	napi_value fnCreate;
+	NAPI_CALL(env, napi_create_function(env, NULL, 0, create, NULL, &fnCreate));
+	NAPI_CALL(env, napi_set_named_property(env, exports, "create", fnCreate));
 
-	napi_value fn2;
-	NAPI_CALL(env, napi_create_function(env, NULL, 0, loop, NULL, &fn2));
-	NAPI_CALL(env, napi_set_named_property(env, exports, "loop", fn2));
+	napi_value fnUpdate;
+	NAPI_CALL(env, napi_create_function(env, NULL, 0, update, NULL, &fnUpdate));
+	NAPI_CALL(env, napi_set_named_property(env, exports, "update", fnUpdate));
+
+	napi_value fnExit;
+	NAPI_CALL(env, napi_create_function(env, NULL, 0, exit, NULL, &fnExit));
+	NAPI_CALL(env, napi_set_named_property(env, exports, "exit", fnExit));
 
 	return exports;
 }

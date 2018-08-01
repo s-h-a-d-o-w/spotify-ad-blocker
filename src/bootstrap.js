@@ -3,6 +3,8 @@ const fs = require('fs-extra');
 
 const {PATHS, IS_PACKAGED} = require('./consts.js');
 
+console.log(IS_PACKAGED ? 'Packaged version' : 'Dev version');
+
 /**
  * Native dependencies have to be extracted to the file system so that they can be spawned.
  * Since pkg doesn't allow for inclusion of .node files (their philosophy is "deliver them with the .exe"),
@@ -15,14 +17,15 @@ const extractNativeDeps = (deps) => {
 		fs.writeFileSync(
 			path.join(PATHS.APPDATA, path.basename(dep)),
 			fs.readFileSync(
-				path.join(__dirname, IS_PACKAGED ? dep.replace('.node', '.foolpkg') : dep)
+				path.join(__dirname, IS_PACKAGED ? dep.replace('.node', '.foolpkg') : dep) // pkg
+				// path.join(__dirname, dep) // nexe
 			)
 		);
 	});
 };
 
 
-module.exports = new Promise((resolve) => {
+module.exports = !IS_PACKAGED ? Promise.resolve() : new Promise((resolve) => {
 	if(process.argv.includes('--cleanup')) {
 		// Clean up our temporary data. This can only be done when processlist.node
 		// was not required yet. Hence - right at the beginning.
@@ -59,9 +62,11 @@ module.exports = new Promise((resolve) => {
 		process.chdir(PATHS.APPDATA);
 
 		extractNativeDeps([
-			'../node_modules/process-list/build/Release/processlist.node',
+			'../assets/spotify-ad-blocker.ico',
 			'../build/Release/spotify-ad-blocker_detection.exe',
+			'../build/Release/tray.node',
 			'../build/Release/volumectrl.node',
+			'../node_modules/process-list/build/Release/processlist.node',
 		]);
 
 		resolve();

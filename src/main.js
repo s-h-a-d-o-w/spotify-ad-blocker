@@ -73,7 +73,8 @@ require('./bootstrap').then(() => {
 						.then(() => {
 							console.log('Muted.');
 							setTimeout(checkForAd, AD_CHECK_INTERVAL);
-						});
+						})
+						.catch(console.error);
 					}
 					else if(!adIsPlaying && muted) {
 						muted = false;
@@ -99,7 +100,8 @@ require('./bootstrap').then(() => {
 						.then(() => {
 							console.log('Unmuted.');
 							checkForAd();
-						});
+						})
+						.catch(console.error);
 					}
 					else {
 						setTimeout(checkForAd, AD_CHECK_INTERVAL);
@@ -110,7 +112,7 @@ require('./bootstrap').then(() => {
 
 					spotify.waitForDeath(pid)
 					.then(() => wasntRunning = true)
-					.catch((err) => console.error(err))
+					.catch(console.error)
 					.finally(init);
 				})
 			})();
@@ -129,4 +131,5 @@ require('./bootstrap').then(() => {
 	// ~18 MB but never goes above ~13 MB when running for days)
 	setTimeout(global.gc, 5000);
 	// ----------------------------------------------------
-});
+})
+.catch(console.error);

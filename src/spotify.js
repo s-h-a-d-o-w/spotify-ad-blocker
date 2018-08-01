@@ -1,10 +1,19 @@
+const path = require('path');
 const {spawn} = require('child_process');
 const {snapshot} = require('process-list');
+//const Spotify = require('bindings')('spotify');
 
-let detectionProcess = spawn('spotify-ad-blocker_detection', {
-	windowsHide: true,
-	stdio: 'pipe',
-});
+const {IS_PACKAGED} = require('./consts.js');
+
+let detectionProcess = spawn(
+	IS_PACKAGED
+		? 'spotify-ad-blocker_detection'
+		: path.join(__dirname, '../build/Release/spotify-ad-blocker_detection.exe'),
+	{
+		windowsHide: true,
+		stdio: 'pipe',
+	}
+);
 detectionProcess.stdout.setEncoding('utf8');
 
 const getPid = () => {
@@ -29,6 +38,7 @@ const getPid = () => {
 };
 
 const isAdPlaying = (pid) => {
+	//return Spotify.isAdPlaying(pid);
 	return new Promise((resolve, reject) => {
 		detectionProcess.stdin.write(pid + '\n', () => {
 			(function waitForResult() {

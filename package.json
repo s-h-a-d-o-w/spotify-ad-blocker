@@ -1,20 +1,24 @@
 {
   "name": "spotify-ad-blocker",
+  "engines": {
+    "node": ">=10.0.0"
+  },
   "bin": "./src/main.js",
   "main": "./src/main.js",
   "license": "MIT",
   "scripts": {
     "beforebuild": "node-gyp rebuild && renamer -f .node -r .foolpkg **/*.node",
-    "build": "npm run beforebuild && npm run build:detection && npm run build:pkg && npm run build:silentexe && npm run afterbuild",
+    "build": "yarn beforebuild && yarn build:detection && yarn build:pkg && yarn build:silentexe && yarn afterbuild",
+    "build:dev": "node-gyp rebuild && yarn build:detection",
     "build:detection": "g++ native\\win\\spotify\\spotify.cc -o build\\Release\\spotify-ad-blocker_detection.exe",
-    "build:nonsilent": "npm run beforebuild && npm run build:pkg && npm run afterbuild",
-    "build:log": "npm run beforebuild && npm run build:pkg:log && npm run afterbuild",
+    "build:nonsilent": "yarn beforebuild && yarn build:detection && yarn build:pkg && yarn afterbuild",
+    "build:log": "yarn beforebuild && yarn build:pkg:log && yarn afterbuild",
     "build:pkg": "pkg . --options expose-gc --target win --output spotify-ad-blocker.exe",
     "build:pkg:log": "pkg . --debug --target win --output spotify-ad-blocker.exe > pkg.log",
     "build:silentexe": "create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
     "afterbuild": "renamer -f .foolpkg -r .node **/*.foolpkg",
     "start": "cross-env DEBUG=swh node --expose-gc .",
-    "start:webstorm": "npm run build:mute && cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
+    "start:webstorm": "yarn build:mute && cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
     "postinstall": "patch-package"
   },
   "dependencies": {
@@ -22,24 +26,22 @@
     "bindings": "1.3.0",
     "fecha": "2.3.3",
     "fs-extra": "6.0.1",
-    "process-list": "1.2.3",
-    "systray": "1.0.5"
+    "process-list": "1.2.3"
   },
   "devDependencies": {
     "create-nodew-exe": "1.0.4",
     "cross-env": "5.1.4",
-    "nexe": "^2.0.0-rc.31",
     "patch-package": "5.1.1",
-    "pkg": "4.3.3",
+    "pkg": "4.4.0",
     "postinstall-postinstall": "1.0.0",
     "renamer": "^0.7.3"
   },
   "pkg": {
     "assets": [
-      "./build/Release/volumectrl.foolpkg",
-      "./build/Release/spotify-ad-blocker_detection.exe",
       "./assets/spotify-ad-blocker.ico",
-      "./node_modules/systray/traybin/tray_windows_release.exe",
+      "./build/Release/spotify-ad-blocker_detection.exe",
+      "./build/Release/tray.foolpkg",
+      "./build/Release/volumectrl.foolpkg",
       "./node_modules/process-list/build/Release/processlist.foolpkg"
     ]
   }

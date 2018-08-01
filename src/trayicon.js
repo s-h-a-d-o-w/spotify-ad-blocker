@@ -1,85 +1,76 @@
-const fs = require('fs');
 const path = require('path');
-const SysTray = require('systray').default;
 const AutoLaunch = require('auto-launch');
 const volumectrl = require('bindings')('volumectrl');
 
-const {IS_PACKAGED} = require('./consts.js');
-const blockerAutoLaunch = new AutoLaunch({
+const {IS_PACKAGED, MENU} = require('./consts.js');
+const state = require('./state.js');
+const Tray = require('./Tray.js');
+
+const autoLaunch = new AutoLaunch({
 	name: 'Spotify Ad Blocker',
 	path: process.execPath,
 });
-const state = require('./state.js');
+
+let isMutedDebug = false; // only used in dev environment
 
 const createTray = (autoLaunchEnabled) => {
-	let muted = false;
-	const icon = fs.readFileSync(path.join(__dirname, '../assets/spotify-ad-blocker.ico'));
-	const menu = {
-		icon: icon.toString('base64'),
-		title: "Spotify Ad Blocker",
-		tooltip: "Spotify Ad Blocker",
-		items: [{
-			title: "Run on startup",
-			checked: autoLaunchEnabled,
-			enabled: IS_PACKAGED
-		}, {
-			title: "Exit",
-			enabled: true
-		}]
-	};
+	const trayItems = [{
+		id: MENU.AUTOLAUNCH,
+		text: 'Run on startup',
+		enabled: IS_PACKAGED,
+		checked: autoLaunchEnabled,
+	}, {
+		id: MENU.EXIT,
+		text: 'Exit',
+		enabled: true,
+	}];
 
-	// Make Test option available only in dev environment
 	if(!IS_PACKAGED) {
-		menu.items.push({
-			title: "DEBUG ONLY: Toggle muting",
-			enabled: true
+		trayItems.push({
+			id: MENU.DEBUG_MUTE,
+			text: "DEBUG ONLY: Toggle muting",
+			enabled: true,
+			checked: isMutedDebug,
 		});
 	}
 
-	const systray = new SysTray({
-		menu,
-		debug: false,
-		copyDir: true, // copy go tray binary to outside directory, useful for packing tool like pkg.
+	const tray = new Tray({
+		icon: IS_PACKAGED ? 'spotify-ad-blocker.ico' : path.join(__dirname, '../assets/spotify-ad-blocker.ico'),
+		items: trayItems,
+		tooltip: `Spotify Ad Blocker`,
 	});
 
-	systray.onClick((action) => {
-		switch(action.seq_id) {
-			case 0:
-				action.item.checked ? blockerAutoLaunch.disable() : blockerAutoLaunch.enable();
-				systray.sendAction({
-					type: 'update-item',
-					item: {
-						...action.item,
-						checked: !action.item.checked,
-					},
-					seq_id: action.seq_id,
-				});
-				break;
-			case 1:
-				volumectrl.mute(false, state.pid)
-				.then(() => systray.kill());
-				break;
-			case 2:
-				// Only available if this isn't running packaged
-				muted = !muted;
+	tray.on('click', function(item) {
+		// console.log(this);
 
-				volumectrl.mute(muted, state.pid) // Enter current Spotify PID to test volumectrl
-				.then(() => {
-					console.log(`Mute on demand: ${muted}`);
-				})
-				.catch((e) => {
-					console.error(e);
-				});
+		if(item.id === MENU.AUTOLAUNCH) {
+			item.checked ? autoLaunch.disable() : autoLaunch.enable();
 
-				break;
+			item.checked = !item.checked;
+			this.update(item);
+		}
+		else if(item.id === MENU.EXIT) {
+			this.destroy();
+			process.exit(0);
+		}
+		else if(item.id === MENU.DEBUG_MUTE) {
+			isMutedDebug = !isMutedDebug;
+
+			volumectrl.mute(isMutedDebug, state.pid)
+			.then(() => {
+				console.log(`[DEBUG] muted: ${isMutedDebug}`);
+			})
+			.catch(console.error);
+
+			item.checked = isMutedDebug;
+			this.update(item);
 		}
 	});
 };
 
-// Checking for whether the app is already registered to
-// run at startup only makes sense when run as .exe
+
 if(IS_PACKAGED) {
-	blockerAutoLaunch.isEnabled()
+	autoLaunch.isEnabled()
 	.then(createTray);
 }
 else {

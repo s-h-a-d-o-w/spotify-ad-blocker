@@ -1,5 +1,5 @@
-// hello.cc using N-API
 #include <node_api.h>
+
 #include <cstdio>
 
 #include "spotify.h"

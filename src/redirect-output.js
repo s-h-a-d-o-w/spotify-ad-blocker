@@ -22,9 +22,10 @@ function setup() {
 	// Redirect stdout/stderr to log files if app is run as packaged .exe
 	// --------------------------------------------------------------------
 	const stdoutFile = fs.createWriteStream(PATHS.DEBUG_LOG, {flags: 'a'});
+	// ignore stdout if not run with --debug
+	const isDebug = process.argv.includes('--debug');
 	process.stdout.write = function (string, encoding) {
-		// ignore stdout if not run with --debug
-		if(process.argv.includes('--debug')) {
+		if(isDebug) {
 			string = `${fecha.format(new Date(), "HH:mm:ss.SSS")}: ${string}`;
 			stdoutFile.write(string, encoding);
 		}

@@ -37,6 +37,9 @@ Please note that I am not too familiar with native code development and I was st
 to make things work. If you know better and would like to clean up the build progress for various 
 C/C++ code, I appreciate any contribution.
 
+Building is a prerequisite to using `yarn start`. (Not triggered automatically on every 
+start because it takes a while) 
+
 ### Building
 
 This is only relevant if you for some reason want to build this project yourself - maybe you 

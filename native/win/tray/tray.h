@@ -1,4 +1,30 @@
 //Based on: https://github.com/zserge/tray/blob/master/tray.h
+
+/*
+MIT License
+
+Original work Copyright (c) 2017 Serge Zaitsev
+Modified work Copyright (c) 2018 Andreas Opferkuch
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #ifndef TRAY_H
 #define TRAY_H
 
@@ -10,6 +36,7 @@ struct tray_menu;
 
 struct tray {
   char *icon;
+  char *tooltip;
   struct tray_menu *menu;
 };
 
@@ -69,16 +96,13 @@ static GtkMenuShell *_tray_menu(struct tray_menu *m) {
 }
 
 static int tray_init(struct tray *tray) {
-  printf("A");
   if (gtk_init_check(0, NULL) == FALSE) {
-	  printf("B");
     return -1;
   }
   indicator = app_indicator_new(TRAY_APPINDICATOR_ID, tray->icon,
                                 APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
   app_indicator_set_status(indicator, APP_INDICATOR_STATUS_ACTIVE);
   tray_update(tray);
-  printf("init");
   return 0;
 }
 
@@ -186,18 +210,33 @@ static void tray_update(struct tray *tray) {
 static void tray_exit() { [NSApp terminate:NSApp]; }
 
 #elif defined(TRAY_WINAPI)
+#define UNICODE
+#define _UNICODE
+
 #include <windows.h>
 
 #include <shellapi.h>
 
 #define WM_TRAY_CALLBACK_MESSAGE (WM_USER + 1)
-#define WC_TRAY_CLASS_NAME "TRAY"
+#define WC_TRAY_CLASS_NAME L"TRAY"
 #define ID_TRAY_FIRST 1000
 
 static WNDCLASSEX wc;
 static NOTIFYICONDATA nid;
 static HWND hwnd;
 static HMENU hmenu = NULL;
+
+// Based on: https://stackoverflow.com/a/6693107/5040168
+//
+// NOTE: Call free() on the returned string when you're done!
+wchar_t* toWide(char* str) {
+  int wchars_num = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
+
+  wchar_t* wstr = (wchar_t*)malloc(sizeof(wchar_t) * wchars_num);
+  MultiByteToWideChar(CP_UTF8, 0, str, -1, wstr, wchars_num);
+
+  return wstr;
+}
 
 static LRESULT CALLBACK _tray_wnd_proc(HWND hwnd, UINT msg, WPARAM wparam,
                                        LPARAM lparam) {
@@ -243,7 +282,7 @@ static HMENU _tray_menu(struct tray_menu *m, UINT *id) {
   HMENU hmenu = CreatePopupMenu();
   for (; m != NULL && m->text != NULL; m++, (*id)++) {
     if (strcmp(m->text, "-") == 0) {
-      InsertMenu(hmenu, *id, MF_SEPARATOR, TRUE, "");
+      InsertMenu(hmenu, *id, MF_SEPARATOR, TRUE, L"");
     } else {
       MENUITEMINFO item;
       memset(&item, 0, sizeof(item));
@@ -262,17 +301,19 @@ static HMENU _tray_menu(struct tray_menu *m, UINT *id) {
         item.fState |= MFS_CHECKED;
       }
       item.wID = *id;
-      item.dwTypeData = m->text;
+
+      wchar_t* text = toWide(m->text);
+      item.dwTypeData = text;
       item.dwItemData = (ULONG_PTR)m;
 
       InsertMenuItem(hmenu, *id, TRUE, &item);
+      free(text);
     }
   }
   return hmenu;
 }
 
 static int tray_init(struct tray *tray) {
-printf("A\n");
   memset(&wc, 0, sizeof(wc));
   wc.cbSize = sizeof(WNDCLASSEX);
   wc.lpfnWndProc = _tray_wnd_proc;
@@ -281,23 +322,20 @@ printf("A\n");
   if (!RegisterClassEx(&wc)) {
     return -1;
   }
-printf("A\n");
 
   hwnd = CreateWindowEx(0, WC_TRAY_CLASS_NAME, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   if (hwnd == NULL) {
     return -1;
   }
   UpdateWindow(hwnd);
-printf("A\n");
 
   memset(&nid, 0, sizeof(nid));
   nid.cbSize = sizeof(NOTIFYICONDATA);
   nid.hWnd = hwnd;
   nid.uID = 0;
-  nid.uFlags = NIF_ICON | NIF_MESSAGE;
+  nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
   nid.uCallbackMessage = WM_TRAY_CALLBACK_MESSAGE;
   Shell_NotifyIcon(NIM_ADD, &nid);
-printf("A\n");
 
   tray_update(tray);
   return 0;
@@ -319,23 +357,34 @@ static int tray_loop(int blocking) {
 }
 
 static void tray_update(struct tray *tray) {
-printf("B\n");
   HMENU prevmenu = hmenu;
   UINT id = ID_TRAY_FIRST;
-printf("B\n");
   hmenu = _tray_menu(tray->menu, &id);
-printf("B\n");
   SendMessage(hwnd, WM_INITMENUPOPUP, (WPARAM)hmenu, 0);
+
   HICON icon;
-printf("B\n");
-  ExtractIconEx(tray->icon, 0, NULL, &icon, 1);
-printf("B\n");
+  wchar_t* iconPath = toWide(tray->icon);
+  int iconsExtracted = ExtractIconEx(iconPath, 0, NULL, &icon, 1);
+  if(iconsExtracted < 1) {
+    printf("No icons found at: %s\n", tray->icon);
+  }
+  free(iconPath);
   if (nid.hIcon) {
     DestroyIcon(nid.hIcon);
   }
   nid.hIcon = icon;
+
+  if (tray->tooltip != 0 && strlen(tray->tooltip) > 0) {
+    wchar_t* wide = toWide(tray->tooltip);
+    wcsncpy(nid.szTip, wide, ARRAYSIZE(nid.szTip));
+    free(wide);
+    nid.szTip[ARRAYSIZE(nid.szTip) - 1] = L'\0';
+  }
+  else {
+    nid.szTip[0] = L'\0';
+  }
+
   Shell_NotifyIcon(NIM_MODIFY, &nid);
-printf("B\n");
 
   if (prevmenu != NULL) {
     DestroyMenu(prevmenu);
