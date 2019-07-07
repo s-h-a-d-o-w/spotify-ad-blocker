@@ -33,6 +33,10 @@ The systray icon runs as a separate process, so don't be alarmed if you someday 
 
 ## Development Notes
 
+Please note that I am not too familiar with native code development and I was struggling a bit 
+to make things work. If you know better and would like to clean up the build progress for various 
+C/C++ code, I appreciate any contribution.
+
 ### Building
 
 This is only relevant if you for some reason want to build this project yourself - maybe you 
@@ -53,11 +57,9 @@ then save.
 
 ### Future Linux support
 
-- This might with volumectrl implementation for Linux:    
-https://askubuntu.com/a/508230/689361  
+- This might help:
+https://askubuntu.com/a/508230/689361
 https://bazaar.launchpad.net/~mkayaalp/indicator-muteads/stable/files/head:/src/
-
-- `node-native-dialog` needs to offer Linux support too.  
 
 ### Patches
 
@@ -98,4 +100,4 @@ of the one from its own cache.
 (and zeit actually merges the features), please do let me know.**
  
 - Expand volumectrl to a more general volume control library and then use that as an external 
-dependency.
+dependency via registry.
