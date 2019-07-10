@@ -1,8 +1,9 @@
-patch-package
+diff --git a/node_modules/pkg/prelude/bootstrap.js b/node_modules/pkg/prelude/bootstrap.js
+index 216579e..df9cfae 100644
 --- a/node_modules/pkg/prelude/bootstrap.js
 +++ b/node_modules/pkg/prelude/bootstrap.js
-@@ -203,9 +203,7 @@ function projectToFilesystem (f) {
-
+@@ -210,9 +210,7 @@ function projectToFilesystem (f) {
+ 
  function projectToNearby (f) {
    return require('path').join(
 -    require('path').dirname(
@@ -12,10 +13,10 @@ patch-package
      require('path').basename(
        f
      )
-@@ -1397,20 +1395,6 @@ function payloadFileSync (pointer) {
+@@ -1406,20 +1404,6 @@ function payloadFileSync (pointer) {
      }
    }
-
+ 
 -  childProcess.spawn = function () {
 -    var args = cloneArgs(arguments);
 -    setOptsEnv(args);
