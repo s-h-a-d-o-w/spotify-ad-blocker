@@ -26,11 +26,6 @@ Run `spotify-ad-blocker.exe --debug` until those errors occur and
 then copy/paste the contents of `%APPDATA%/spotify-ad-blocker/error.log` as well as 
 `%APPDATA%/spotify-ad-blocker/debug.log` into your issue description.
 
-## Miscellaneous
-
-The systray icon runs as a separate process, so don't be alarmed if you someday notice a 
-`tray_windows_release.exe` in your task manager and wonder where it comes from. :smile: 
-
 ## Development Notes
 
 Please note that I am not too familiar with native code development and I was struggling a bit 
