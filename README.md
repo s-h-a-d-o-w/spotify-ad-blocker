@@ -40,13 +40,17 @@ start because it takes a while)
 This is only relevant if you for some reason want to build this project yourself - maybe you 
 want to fork it or something. (Plus - notes to my future self :wink:) 
 
-- A recent Node.js version (see `engines` in `package.json`) is needed, since N-API is used 
-for the native addon in this project and this was still experimental in Node 8.x, printing 
-warnings to the console.
+#### Requirements
+
+- g++ (install e.g. by following this guide https://code.visualstudio.com/docs/cpp/config-mingw#_prerequisites )
+
+- process-list requires the installation of C++ ATL, which is an optional feature of the Visual Studio build tools when installing desktop development with C++ https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022
 
 - Run `yarn build`
 
-- Start ResourceHacker (yes, the GUI) and select `Icon`, then right click -> `Replace Icon...`. 
+### Deployment
+
+- After building, start ResourceHacker (yes, the GUI) and select `Icon`, then right click -> `Replace Icon...`. 
 Leave everything at default, simply select `spotify-ad-blocker_for_exe.ico` from `./assets` and 
 then save.
 (If the new icon doesn't show up in e.g. Explorer, run 

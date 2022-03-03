@@ -59,6 +59,8 @@ struct itemmap {
 // ===============================================
 napi_value undefined;
 napi_threadsafe_function threadSafeCallback;
+napi_async_work workEvents;
+napi_async_work workMainLoop;
 
 tray nodeTray;
 tray_menu* items;
@@ -208,20 +210,14 @@ napi_value create(napi_env env, napi_callback_info info) {
 	nodeTray.tooltip = tooltip;
 	nodeTray.menu = items;
 
-	napi_async_work workCreation;
-	napi_value workNameCreation;
+	napi_value workNameMainLoop;
+	napi_create_string_utf8(env, "work:tray:mainloop", NAPI_AUTO_LENGTH, &workNameMainLoop);
+	NAPI_CALL(env, napi_create_async_work(env, NULL, workNameMainLoop, asyncTrayCreation, NULL, &nodeTray, &workMainLoop));
+	NAPI_CALL(env, napi_queue_async_work(env, workMainLoop));
 
-	napi_create_string_utf8(env, "work:tray:mainloop", NAPI_AUTO_LENGTH, &workNameCreation);
-	NAPI_CALL(env, napi_create_async_work(env, NULL, workNameCreation, asyncTrayCreation, NULL, &nodeTray, &workCreation));
-
-	NAPI_CALL(env, napi_queue_async_work(env, workCreation));
-
-
-	napi_async_work workEvents;
 	napi_value workNameEvents;
 	napi_create_string_utf8(env, "work:tray:events", NAPI_AUTO_LENGTH, &workNameEvents);
 	NAPI_CALL(env, napi_create_async_work(env, NULL, workNameEvents, asyncTrayEvents, NULL, NULL, &workEvents));
-
 	NAPI_CALL(env, napi_queue_async_work(env, workEvents));
 
 
@@ -294,6 +290,11 @@ napi_value exit(napi_env env, napi_callback_info info) {
 	tray_exit();
 	delete[] imap;
 	delete[] items;
+
+	NAPI_CALL(env, napi_release_threadsafe_function(threadSafeCallback, napi_tsfn_abort));
+	NAPI_CALL(env, napi_delete_async_work(env, workEvents));
+	NAPI_CALL(env, napi_delete_async_work(env, workMainLoop));
+
 	return undefined;
 }
 // =============================================================================================

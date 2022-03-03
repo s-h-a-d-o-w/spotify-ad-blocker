@@ -55,14 +55,16 @@ HWND getHandle(unsigned long pid)
 // Return is int instead of bool to allow simple communication of errors
 // when this is used with N-API instead of a standalone .exe. (Who knows, maybe that'll work again
 // at some point - currently: "Error: Invalid access to memory location.")
-int isAdPlaying(int pid) {
+char* getWindowTitle(int pid) {
+	char* titleError = (char*)"___unable_to_get_title___";
+
 	// Get handle of Spotify window if it's not already stored
 	if(!(spotify.pid == pid && spotify.handle)) {
 		spotify.pid = pid;
 		spotify.handle = getHandle(pid);
 
 		if(spotify.handle == 0)
-			return 2;
+			return titleError;
 	}
 
 	// Get current window title
@@ -73,20 +75,17 @@ int isAdPlaying(int pid) {
 
 	if(result == 0 && GetLastError() != ERROR_SUCCESS) {
 		delete[] title;
-		return 3;
+		return titleError;
 	}
-	else {
-		bool isAd = strstr(title, " - ") == NULL;
-		delete[] title;
-		return isAd ? 1 : 0;
-	}
+	
+	return title;
 }
 
 int main() {
-	// pid and result of ad check are communicated via stdin/stdout
+	// pid and window title are communicated via stdin/stdout
 	for(string pid; getline(cin, pid);) {
 		try {
-			cout << isAdPlaying(stoi(pid));
+			cout << getWindowTitle(stoi(pid));
 		}
 		catch(...) {
 			cout << "Input has to be a number!" << endl;

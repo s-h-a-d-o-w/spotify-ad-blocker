@@ -88,49 +88,4 @@ class Tray extends EventEmitter {
 	}
 }
 
-/*
-// TEST
-const FIRST_ITEM = Symbol();
-const EXIT = Symbol();
-
-const myTray = new Tray({
-	icon: './assets/spotify-ad-blocker.ico',
-	items: [{
-		id: FIRST_ITEM,
-		text: 'Schön',
-		enabled: true,
-		checked: true,
-	}, {
-		id: EXIT,
-		text: 'Exit',
-		enabled: true,
-		checked: false,
-	}],
-	tooltip: `Was ur lange was sicher länger als 128 Zeichen ist.Was ur lange was sicher länger als 128 Zeichen ist.Was ur lange was sicher länger als 128 Zeichen ist.
-Was ur lange was sicher länger als 128 Zeichen ist.Was ur lange was sicher länger als 128 Zeichen ist.`,
-});
-
-// item is a shallow copy - id can still be compared to e.g. symbol but booleans can be safely toggled.
-myTray.on('click', function(item) {
-	console.log(this);
-	console.log(item);
-
-	if(item.id && item.id === FIRST_ITEM) {
-		console.log('FIRST');
-		try {
-			item.checked = !item.checked;
-			this.update(item);
-		}
-		catch(e) {
-			console.log(e);
-		}
-	}
-	else if(item.id === EXIT) {
-		this.destroy();
-		process.exit(0);
-	}
-});
-*/
-
-
 module.exports = Tray;

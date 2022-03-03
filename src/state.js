@@ -1,3 +1,5 @@
 module.exports = {
-	pid: -1
+	detectionProcess: null,
+	pid: -1,
+	shouldExit: false
 };

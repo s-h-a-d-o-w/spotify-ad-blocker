@@ -12,11 +12,11 @@ function setup() {
 	// ------------------------------------------------------------------------------
 	process.on('uncaughtException', (err) => {
 		console.error(err);
-		setTimeout(() => process.exit(1), 500);
+		process.exit(1)
 	});
 	process.on('unhandledRejection', (reason, p) => {
 		console.error('Unhandled Rejection at:', p, 'reason:', reason);
-		setTimeout(() => process.exit(1), 500);
+		process.exit(1)
 	});
 
 	// Redirect stdout/stderr to log files if app is run as packaged .exe

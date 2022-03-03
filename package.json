@@ -1,7 +1,7 @@
 {
   "name": "spotify-ad-blocker",
   "engines": {
-    "node": ">=10.0.0"
+    "node": ">=14.0.0"
   },
   "bin": "./src/main.js",
   "main": "./src/main.js",
@@ -26,13 +26,13 @@
     "bindings": "1.5.0",
     "fecha": "2.3.3",
     "fs-extra": "6.0.1",
-    "process-list": "1.2.3"
+    "process-list": "2.0.0"
   },
   "devDependencies": {
     "create-nodew-exe": "1.0.5",
     "cross-env": "5.2.0",
     "patch-package": "6.1.2",
-    "pkg": "4.4.0",
+    "pkg": "5.5.2",
     "postinstall-postinstall": "2.0.0",
     "renamer": "1.1.2"
   },

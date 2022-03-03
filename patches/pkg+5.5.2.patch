@@ -1,0 +1,34 @@
+diff --git a/node_modules/pkg/prelude/bootstrap.js b/node_modules/pkg/prelude/bootstrap.js
+index 7285b7c..ca99523 100644
+--- a/node_modules/pkg/prelude/bootstrap.js
++++ b/node_modules/pkg/prelude/bootstrap.js
+@@ -330,7 +330,7 @@ function projectToFilesystem(f) {
+ }
+ 
+ function projectToNearby(f) {
+-  return path.join(xpdn, path.basename(f));
++  return path.join(process.cwd(), path.basename(f));
+ }
+ function findNativeAddonSyncFreeFromRequire(path_) {
+   if (!insideSnapshot(path_)) throw new Error(`UNEXPECTED-10 ${path_}`);
+@@ -1936,20 +1936,6 @@ function payloadFileSync(pointer) {
+     }
+   }
+ 
+-  childProcess.spawn = function spawn() {
+-    const args = cloneArgs(arguments);
+-    setOptsEnv(args);
+-    modifyShort(args);
+-    return ancestor.spawn.apply(childProcess, args);
+-  };
+-
+-  childProcess.spawnSync = function spawnSync() {
+-    const args = cloneArgs(arguments);
+-    setOptsEnv(args);
+-    modifyShort(args);
+-    return ancestor.spawnSync.apply(childProcess, args);
+-  };
+-
+   childProcess.execFile = function execFile() {
+     const args = cloneArgs(arguments);
+     setOptsEnv(args);

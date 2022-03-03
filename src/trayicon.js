@@ -40,9 +40,7 @@ const createTray = (autoLaunchEnabled) => {
 		tooltip: `Spotify Ad Blocker`,
 	});
 
-	tray.on('click', function(item) {
-		// console.log(this);
-
+	tray.on('click', function clickHandler(item) {
 		if(item.id === MENU.AUTOLAUNCH) {
 			item.checked ? autoLaunch.disable() : autoLaunch.enable();
 
@@ -51,7 +49,14 @@ const createTray = (autoLaunchEnabled) => {
 		}
 		else if(item.id === MENU.EXIT) {
 			this.destroy();
-			process.exit(0);
+			state.detectionProcess.kill()
+			state.shouldExit = true
+
+			// Allow for async cleanup to happen before exit
+			setTimeout(() => {
+				console.log("Exiting...")
+				process.exit(0)
+			}, 100)
 		}
 		else if(item.id === MENU.DEBUG_MUTE) {
 			isMutedDebug = !isMutedDebug;

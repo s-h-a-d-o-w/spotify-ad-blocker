@@ -1,4 +1,6 @@
-require('./bootstrap').then(() => {
+const { initialize} = require("./bootstrap")
+
+if (initialize()) {
 	const path = require('path');
 	const fs = require('fs-extra');
 	const {spawn} = require('child_process');
@@ -39,6 +41,14 @@ require('./bootstrap').then(() => {
 			}
 		});
 	}
+
+	// Correct order of exit handlers is key!
+	process.on("exit", () => {
+		// It used to be that this wasn't necessary. But despite some fixes after 
+		// which debugging tools show no more actionable pending things, shutting down 
+		// doesn't work anymore.
+		process.kill(process.pid, "SIGTERM")
+	})
 	// ----------------------------------------------------
 
 	// "MAIN"
@@ -48,6 +58,10 @@ require('./bootstrap').then(() => {
 	}
 
 	(function init() {
+		if (state.shouldExit) {
+			return;
+		}
+
 		let muted = false;
 		let wasntRunning = true;
 
@@ -55,18 +69,23 @@ require('./bootstrap').then(() => {
 		.then((pid) => new Promise((resolve) => {
 			// If Spotify was started after the blocker, we need
 			// to give it a bit of time to create its main window.
-			setTimeout(() => resolve(pid), 1000);
+			setTimeout(() => resolve(pid), 3000);
 		}))
 		.then((pid) => {
 			console.log(`Process ID: ${pid}`);
 			state.pid = pid;
 
 			(function checkForAd() {
+				if (state.shouldExit) {
+					return
+				}
+
 				spotify.isAdPlaying(pid)
 				.then((adIsPlaying) => {
 					if(adIsPlaying && !muted) {
 						muted = true;
 
+						console.log('Muting.');
 						// Don't catch errors because if volume control errors, something is so messed up
 						// that the app should exit anyway.
 						volumectrl.mute(muted, pid)
@@ -93,6 +112,7 @@ require('./bootstrap').then(() => {
 							}
 						}
 
+						console.log('Unmuting.');
 						// Used to be that we could delay unmuting, since Spotify signals the end too early
 						// and so one hears the end of the ad. This doesn't work any more because sound is also
 						// muted whenever the user pauses.
@@ -131,5 +151,4 @@ require('./bootstrap').then(() => {
 	// ~18 MB but never goes above ~13 MB when running for days)
 	setTimeout(global.gc, 5000);
 	// ----------------------------------------------------
-})
-.catch(console.error);
+}
