@@ -1,7 +1,7 @@
 const path = require('path');
 
 const TITLE_ERROR = '___unable_to_get_title___';
-const AD_CHECK_INTERVAL = 1000;
+const AD_CHECK_INTERVAL = 100;
 const IS_PACKAGED = process.argv[0].indexOf('node.exe') === -1;
 
 const MENU = {
