@@ -3,11 +3,14 @@ const tray = require('bindings')('tray');
 
 class Tray extends EventEmitter {
 	addDefaults(item) {
-		return Object.assign({
-			text: '',
-			enabled: true,
-			checked: false,
-		}, item);
+		return Object.assign(
+			{
+				text: '',
+				enabled: true,
+				checked: false,
+			},
+			item
+		);
 	}
 
 	click(item) {
@@ -19,7 +22,7 @@ class Tray extends EventEmitter {
 
 		let icon = opts.icon,
 			items = opts.items,
-			tooltip = opts.tooltip || "";
+			tooltip = opts.tooltip || '';
 
 		// The IDs the user passes in are mostly just for their convenience, the native addon
 		// uses references to objects that are not allowed to change.
@@ -30,35 +33,32 @@ class Tray extends EventEmitter {
 		// this.wrappedIds[FOO] = { id: FOO }
 		this.wrappedIds = {};
 
-		if(icon && items && items.length > 0) {
+		if (icon && items && items.length > 0) {
 			// Enforce unique IDs
 			let cntIds = {};
 			items.forEach((item) => {
-				if(cntIds.hasOwnProperty(item.id))
-					throw('IDs must be unique!');
-				else
-					cntIds[item.id] = 1;
+				if (item.id in cntIds) throw 'IDs must be unique!';
+				else cntIds[item.id] = 1;
 			});
 
 			// Prep items with default values and wrapping their IDs
 			items = items.map((item) => {
-				if(!item.hasOwnProperty('id'))
-					throw('All items have to have the property "id".');
+				if (typeof item.id === 'undefined')
+					throw 'All items have to have the property "id".';
 				else {
 					item = this.addDefaults(item);
 
 					this.wrappedIds[item.id] = {
-						id: item.id
+						id: item.id,
 					};
 
 					return this.wrapId(item);
 				}
 			});
 
-			tray.create(icon, tooltip || "", items, this.click.bind(this));
-		}
-		else {
-			throw('tray: An icon and at least one item have to be provided.');
+			tray.create(icon, tooltip || '', items, this.click.bind(this));
+		} else {
+			throw 'tray: An icon and at least one item have to be provided.';
 		}
 	}
 

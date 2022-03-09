@@ -17,6 +17,7 @@
     "build:pkg:log": "pkg . --debug --target win --output spotify-ad-blocker.exe > pkg.log",
     "build:silentexe": "create-nodew-exe spotify-ad-blocker.exe spotify-ad-blocker.exe",
     "afterbuild": "renamer -f .foolpkg -r .node **/*.foolpkg",
+    "lint": "yarn eslint --ext .js .",
     "start": "cross-env DEBUG=swh node --expose-gc .",
     "start:webstorm": "yarn build:mute && cross-env DEBUG=* node %NODE_DEBUG_OPTION% .",
     "postinstall": "patch-package"
@@ -31,9 +32,13 @@
   "devDependencies": {
     "create-nodew-exe": "1.0.5",
     "cross-env": "5.2.0",
+    "eslint": "8.10.0",
+    "eslint-config-prettier": "8.5.0",
+    "eslint-plugin-prettier": "4.0.0",
     "patch-package": "6.1.2",
     "pkg": "5.5.2",
     "postinstall-postinstall": "2.0.0",
+    "prettier": "2.5.1",
     "renamer": "1.1.2"
   },
   "pkg": {

@@ -2,7 +2,7 @@ const path = require('path');
 const AutoLaunch = require('auto-launch');
 const volumectrl = require('bindings')('volumectrl');
 
-const {IS_PACKAGED, MENU} = require('./consts.js');
+const { IS_PACKAGED, MENU } = require('./consts.js');
 const state = require('./state.js');
 const Tray = require('./Tray.js');
 
@@ -14,58 +14,62 @@ const autoLaunch = new AutoLaunch({
 let isMutedDebug = false; // only used in dev environment
 
 const createTray = (autoLaunchEnabled) => {
-	const trayItems = [{
-		id: MENU.AUTOLAUNCH,
-		text: 'Run on startup',
-		enabled: IS_PACKAGED,
-		checked: autoLaunchEnabled,
-	}, {
-		id: MENU.EXIT,
-		text: 'Exit',
-		enabled: true,
-	}];
+	const trayItems = [
+		{
+			id: MENU.AUTOLAUNCH,
+			text: 'Run on startup',
+			enabled: IS_PACKAGED,
+			checked: autoLaunchEnabled,
+		},
+		{
+			id: MENU.EXIT,
+			text: 'Exit',
+			enabled: true,
+		},
+	];
 
-	if(!IS_PACKAGED) {
+	if (!IS_PACKAGED) {
 		trayItems.push({
 			id: MENU.DEBUG_MUTE,
-			text: "DEBUG ONLY: Toggle muting",
+			text: 'DEBUG ONLY: Toggle muting',
 			enabled: true,
 			checked: isMutedDebug,
 		});
 	}
 
 	const tray = new Tray({
-		icon: IS_PACKAGED ? 'spotify-ad-blocker.ico' : path.join(__dirname, '../assets/spotify-ad-blocker.ico'),
+		icon: IS_PACKAGED
+			? 'spotify-ad-blocker.ico'
+			: path.join(__dirname, '../assets/spotify-ad-blocker.ico'),
 		items: trayItems,
 		tooltip: `Spotify Ad Blocker`,
 	});
 
 	tray.on('click', function clickHandler(item) {
-		if(item.id === MENU.AUTOLAUNCH) {
+		if (item.id === MENU.AUTOLAUNCH) {
 			item.checked ? autoLaunch.disable() : autoLaunch.enable();
 
 			item.checked = !item.checked;
 			this.update(item);
-		}
-		else if(item.id === MENU.EXIT) {
+		} else if (item.id === MENU.EXIT) {
 			this.destroy();
-			state.detectionProcess.kill()
-			state.shouldExit = true
+			state.detectionProcess.kill();
+			state.shouldExit = true;
 
 			// Allow for async cleanup to happen before exit
 			setTimeout(() => {
-				console.log("Exiting...")
-				process.exit(0)
-			}, 100)
-		}
-		else if(item.id === MENU.DEBUG_MUTE) {
+				console.log('Exiting...');
+				process.exit(0);
+			}, 100);
+		} else if (item.id === MENU.DEBUG_MUTE) {
 			isMutedDebug = !isMutedDebug;
 
-			volumectrl.mute(isMutedDebug, state.pid)
-			.then(() => {
-				console.log(`[DEBUG] muted: ${isMutedDebug}`);
-			})
-			.catch(console.error);
+			volumectrl
+				.mute(isMutedDebug, state.pid)
+				.then(() => {
+					console.log(`[DEBUG] muted: ${isMutedDebug}`);
+				})
+				.catch(console.error);
 
 			item.checked = isMutedDebug;
 			this.update(item);
@@ -73,11 +77,8 @@ const createTray = (autoLaunchEnabled) => {
 	});
 };
 
-
-if(IS_PACKAGED) {
-	autoLaunch.isEnabled()
-	.then(createTray);
-}
-else {
+if (IS_PACKAGED) {
+	autoLaunch.isEnabled().then(createTray);
+} else {
 	createTray(false);
 }

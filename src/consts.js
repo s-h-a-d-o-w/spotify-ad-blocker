@@ -1,6 +1,6 @@
 const path = require('path');
 
-const TITLE_ERROR = "___unable_to_get_title___";
+const TITLE_ERROR = '___unable_to_get_title___';
 const AD_CHECK_INTERVAL = 1000;
 const IS_PACKAGED = process.argv[0].indexOf('node.exe') === -1;
 
@@ -21,5 +21,5 @@ module.exports = {
 	IS_PACKAGED,
 	MENU,
 	PATHS,
-	TITLE_ERROR
+	TITLE_ERROR,
 };
