@@ -68,6 +68,7 @@ if (initialize()) {
 
 		let muted = false;
 		let wasntRunning = true;
+		let hasJustStarted = true;
 
 		spotify
 			.getPid()
@@ -91,6 +92,11 @@ if (initialize()) {
 					spotify
 						.isAdPlaying(pid)
 						.then((adIsPlaying) => {
+							if (hasJustStarted) {
+								volumectrl.mute(false, pid);
+								hasJustStarted = false;
+							}
+
 							if (adIsPlaying && !muted) {
 								muted = true;
 
