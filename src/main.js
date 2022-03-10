@@ -7,7 +7,12 @@ if (initialize()) {
 
 	const volumectrl = require('bindings')('volumectrl');
 	const redirectOutput = require('./redirect-output.js');
-	const { AD_CHECK_INTERVAL, IS_PACKAGED, PATHS } = require('./consts.js');
+	const {
+		AD_CHECK_INTERVAL,
+		IS_PACKAGED,
+		PATHS,
+		SPOTIFY_CHECK_INTERVAL,
+	} = require('./consts.js');
 	const spotify = require('./spotify.js');
 	const state = require('./state.js');
 
@@ -156,7 +161,7 @@ if (initialize()) {
 			.catch((e) => {
 				wasntRunning = true;
 				console.log(e);
-				setTimeout(init, 3000);
+				setTimeout(init, SPOTIFY_CHECK_INTERVAL);
 			});
 	})();
 

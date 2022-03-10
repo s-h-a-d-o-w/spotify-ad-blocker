@@ -2,6 +2,7 @@ const path = require('path');
 
 const TITLE_ERROR = '___unable_to_get_title___';
 const AD_CHECK_INTERVAL = 100;
+const SPOTIFY_CHECK_INTERVAL = 3000;
 const IS_PACKAGED = process.argv[0].indexOf('node.exe') === -1;
 
 const MENU = {
@@ -22,4 +23,5 @@ module.exports = {
 	MENU,
 	PATHS,
 	TITLE_ERROR,
+	SPOTIFY_CHECK_INTERVAL,
 };
