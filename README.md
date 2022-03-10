@@ -50,12 +50,9 @@ want to fork it or something. (Plus - notes to my future self :wink:)
 
 ### Deployment
 
-- After building, start ResourceHacker (yes, the GUI) and select `Icon`, then right click -> `Replace Icon...`. 
-Leave everything at default, simply select `spotify-ad-blocker_for_exe.ico` from `./assets` and 
-then save.
-(If the new icon doesn't show up in e.g. Explorer, run 
+- After building, if the new .exe icon doesn't show up in e.g. Explorer, run 
 [`ie4uinit.exe -ClearIconCache`](https://superuser.com/a/499079/700677) on Win7,
-`ie4uinit.exe -show` on Win10)
+`ie4uinit.exe -show` on Win10.
 
 ### Future Linux support
 
