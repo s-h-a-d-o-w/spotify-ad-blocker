@@ -57,10 +57,10 @@ want to fork it or something. (Plus - notes to my future self :wink:)
 
 ### Misc
 
-Since `pkg` doesn't allow for including of native addons in the package, we rename them to 
+- Latest Node that `process-list` supports seems to be v14, otherwise: `error C2039: 'AccessorSignature': is not a member of 'v8' [C:\...\spotify-ad-blocker\node_modules\process-list\build\processlist.vcxproj] `. And requires ATL to be installed - which I can't get installed on my machine at the time => no compilation possible.
+- Since `pkg` doesn't allow for including of native addons in the package, we rename them to 
 `.foolpkg` temporarily.
-
-The npm scripts are intentionally called e.g. `beforebuild` instead of `prebuild` to ensure 
+- The npm scripts are intentionally called e.g. `beforebuild` instead of `prebuild` to ensure 
 consistency between using yarn vs. npm vs. whatever.
 
 ## TODO

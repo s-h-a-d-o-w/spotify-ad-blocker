@@ -1,7 +1,7 @@
 {
   "name": "spotify-ad-blocker",
   "engines": {
-    "node": ">=14.0.0"
+    "node": "14"
   },
   "bin": "./src/main.js",
   "main": "./src/main.js",
