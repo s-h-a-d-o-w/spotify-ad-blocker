@@ -14,6 +14,8 @@
 #include <mmdeviceapi.h>
 #include <audiopolicy.h>
 #include <stdio.h>
+#include <windows.h>
+#include <iostream>
 
 #include "volumectrl.h"
 
@@ -32,6 +34,23 @@
 		goto Exit;                                                             \
 	}
 
+void PrintHResultError(HRESULT hr) {
+    LPVOID lpMsgBuf;
+    if (FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        hr,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL )) {
+        std::wcout << L"Error: " << (LPCTSTR)lpMsgBuf << std::endl;
+        LocalFree(lpMsgBuf);
+    } else {
+        std::wcout << L"Failed to retrieve error message." << std::endl;
+    }
+}
 
 VolumeCtrlResult mute(bool mute, int pid) {
 	VolumeCtrlResult res = {0, ""};
@@ -73,17 +92,21 @@ VolumeCtrlResult mute(bool mute, int pid) {
 		HR_CALL(pCtrl->QueryInterface(__uuidof(IAudioSessionControl2), (void**)&pCtrl2));
 		HR_CALL(pCtrl2->GetProcessId(&cPid));
 
-		//printf("pid #%d: %d\n", i, cPid);
+		// printf("pid #%d: %d\n", i, cPid);
 		if(cPid == pid) {
-			//printf("Found %d!\n", cPid);
+			// printf("Found %d!\n", cPid);
 
 			// Get volume control.
 			// See also (at the bottom):
 			// https://social.msdn.microsoft.com/Forums/en-US/e1f5eff5-22f7-483e-a061-1671f8ee8ff1/how-to-retrieve-audio-sessions-guids-audiosessionguid?forum=vcmfcatl
 			HR_CALL(pCtrl->QueryInterface(__uuidof(ISimpleAudioVolume), (void**)&pVolumeControl));
 
+			// printf("Volume control address: %p\n", pVolumeControl);
 			// Do the muting
 			HR_CALL(pVolumeControl->SetMute((BOOL)mute, NULL));
+			// HRESULT result = pVolumeControl->SetMute((BOOL)mute, NULL);
+			// printf("Muted successfully. (%d)\n", result);
+			// PrintHResultError(result);
 
 			SAFE_RELEASE(pVolumeControl);
 			SAFE_RELEASE(pCtrl);
